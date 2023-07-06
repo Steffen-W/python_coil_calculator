@@ -16,6 +16,8 @@
 # */
 
 import math
+from enum import Enum
+import numpy as np
 
 class _Elliptic:
     def __init__(self):
@@ -27,9 +29,32 @@ class _MagCoreConst:
         self.C1 = 0.0
         self.C2 = 0.0
 
+class _CoilResult:
+    def __init__(self):
+        self.N = 0.0
+        self.sec = 0.0
+        self.thd = 0.0
+        self.fourth = 0.0
+        self.five = 0.0
+        self.six = 0
+        self.seven = 0.0
+
+class Material(Enum):
+    Al = 0
+    Cu = 1
+    Ag = 2
+    Ti = 3
+
 M_SQRT2 = math.sqrt(2)
 M_PI = math.pi
 mu0 = 4e-7 * M_PI
+
+Rho = 0
+Chi = 1
+Alpha = 2
+Dencity = 3
+mtrl = [[2.824e-8, 2.21e-5, 0.0039, 2.69808], [1.7241e-8, - 9.56e-6, 0.00393, 8.96],
+        [1.59e-8, - 2.63e-5, 0.0038, 10.5], [1.15e-7, 2.4e-6, 0.0042, 7.29]]
 
 def odCalc(id : float) -> float:
     # Calculating the outer diameter (od) of the wire with insulation from the internal diameter (id) without insulation
@@ -251,7 +276,7 @@ def HeliCoilS(Lw : float, psi : float, r : float, dw : float, w : float, t : flo
     result = 1e-1 * grandtotal
     return result
 
-def solveHelicalInductance(N : float, _p : float, _Dk : float, _dw : float, _w : float, _t : float, *lw : float, isRoundWire : bool, accuracy : int) -> float:
+def solveHelicalInductance(N : float, _p : float, _Dk : float, _dw : float, _w : float, _t : float, isRoundWire : bool, accuracy : int) -> float:
     dw = 0
     w = 0
     t = 0
@@ -274,59 +299,58 @@ def solveHelicalInductance(N : float, _p : float, _Dk : float, _dw : float, _w :
     else :
         Result = HeliCoilS(lW, psi, Dk / 2, 0, w, t, isRoundWire, accuracy)
     
-    *lw = lW
-    return Result
+    return Result, lW
 
-def deriveOneLayerPoligonalN(Dk : float, dw : float, p : float, n : float, I : float, *lw : float, *iDk : float, accuracy : int) -> float:
+def deriveOneLayerPoligonalN(Dk : float, dw : float, p : float, n : float, I : float, accuracy : int) -> float:
 
     k = 2
     N_min = 0
     rA = math.sqrt((1 / M_PI) * (0.5 * n * math.pow(0.5 * Dk,2) * math.sin(2 * M_PI / n)))
     rP = (0.5 / M_PI) * (Dk * n * math.sin(M_PI / n))
     Kw = math.sqrt(1 / 369.0)
-    *iDk = 2 * (((Kw * math.pow(rP,2)) + ((2 - Kw) * math.pow(rA,2))) / (2 * rA))
-    N = math.sqrt(I / (0.0002 * M_PI * *iDk * (math.log(1 + M_PI / (2 * k)) + 1 / (2.3004 + 3.437 * k + 1.763 * k * k - 0.47 /  math.pow((0.755 + 1 / k), 1.44)))))
-    _CoilResult res
-    getOneLayerI_Poligonal(Dk, dw, p, N, n, &res, accuracy)
+    iDk = 2 * (((Kw * math.pow(rP,2)) + ((2 - Kw) * math.pow(rA,2))) / (2 * rA))
+    N = math.sqrt(I / (0.0002 * M_PI * iDk * (math.log(1 + M_PI / (2 * k)) + 1 / (2.3004 + 3.437 * k + 1.763 * k * k - 0.47 /  math.pow((0.755 + 1 / k), 1.44)))))
+    res = _CoilResult()
+    getOneLayerI_Poligonal(Dk, dw, p, N, n, res, accuracy)
     Ind = res.sec
     while (Ind < I):
         N_min = N
         N_max = 2 * N
         N = (N_max + N_min) / 2
-        getOneLayerI_Poligonal(Dk, dw, p, N, n, &res, accuracy)
+        getOneLayerI_Poligonal(Dk, dw, p, N, n, res, accuracy)
         Ind = res.sec
 
     N_max = N
     while (math.fabs(1 - (Ind / I)) > 0.001):
         N = (N_min + N_max) / 2
-        getOneLayerI_Poligonal(Dk, dw, p, N, n, &res, accuracy)
+        getOneLayerI_Poligonal(Dk, dw, p, N, n, res, accuracy)
         Ind = res.sec
         if (Ind > I):
             N_max = N
         else :
             N_min = N
 
-    *lw = res.thd
+    lw = res.thd
+    return N, lw, iDk
+
+def getOneLayerN_Poligonal(I : float, Dk : float, dw : float,  p : float, n : float, result : _CoilResult, accuracy : int) -> float:
+
+    N, lw, iDk = deriveOneLayerPoligonalN(Dk, dw, p, n, I, accuracy)
+    result.sec = p * N
+    result.thd = lw
+    result.seven = iDk
     return N
 
-def getOneLayerN_Poligonal(I : float, Dk : float, dw : float,  p : float, n : float, _CoilResult *result, accuracy : int) -> float:
-
-    N = deriveOneLayerPoligonalN(Dk, dw, p, n, I, &lw, &iDk, accuracy)
-    result["sec"] = p * N
-    result["thd"] = lw
-    result["seven"] = iDk
-    return N
-
-def getOneLayerI_Poligonal(Dk : float, dw : float, p : float, N : float, n : float, _CoilResult *result, accuracy : int):
+def getOneLayerI_Poligonal(Dk : float, dw : float, p : float, N : float, n : float, result : _CoilResult, accuracy : int):
 
     lk = N * p
     rA = math.sqrt((1 / M_PI) * (0.5 * n * math.pow(0.5 * Dk,2) * math.sin(2.0 * M_PI / n)))
     rP = (0.5 / M_PI) * (Dk * n * math.sin(M_PI / n))
     Kw = math.sqrt(1 / (1 + 368.0 * (lk / Dk)))
     iDk = 2.0 * (((Kw * math.pow(rP, 2)) + ((2.0 - Kw) * math.pow(rA, 2))) / (2.0 * rA))
-    result["sec"] = solveHelicalInductance(N, p, iDk, dw, 0, 0, &lw, true, accuracy)
-    result["thd"] = lw
-    result["seven"] = iDk
+    result.sec , lw = solveHelicalInductance(N, p, iDk, dw, 0, 0, True, accuracy)
+    result.thd = lw
+    result.seven = iDk
 
 def getFerriteCoreMagConst(l1 : float, l2 : float, l3 : float, l4 : float, l5 : float,
                             A1 : float, A2 : float, A3 : float, A4 : float, A5 : float):
@@ -348,32 +372,32 @@ def getFerriteCoreMagConst(l1 : float, l2 : float, l3 : float, l4 : float, l5 : 
 
 # PUBLIC FUNCTIONS REALIZATION
 
-def getOneLayerN_withRoundWire(Dk : float, dw : float, p : float, I : float, *lw : float, accuracy : int) -> float:
+def getOneLayerN_withRoundWire(Dk : float, dw : float, p : float, I : float, accuracy : int) -> float:
 
     k = 2
     N_min = 0
 
     N = math.sqrt(I / (0.0002 * M_PI * Dk * (math.log(1 + M_PI / (2 * k)) + 1 / (2.3004 + 3.437 * k + 1.763 * k * k - 0.47 / math.pow((0.755 + 1 / k), 1.44)))))
-    ind = solveHelicalInductance(N, p, Dk, dw, 0, 0, lw, true, accuracy)
+    ind , lw = solveHelicalInductance(N, p, Dk, dw, 0, 0, True, accuracy)
     while (ind < I):
         N_min = N
         N_max = 2 * N
         N = (N_max + N_min) / 2
-        ind = solveHelicalInductance(N, p, Dk, dw, 0, 0, lw, true, accuracy)
+        ind , lw = solveHelicalInductance(N, p, Dk, dw, 0, 0, True, accuracy)
     
     N_max = N
     while (math.fabs(1 - (ind / I)) > 0.001):
         N = (N_min + N_max) / 2
-        ind = solveHelicalInductance(N, p, Dk, dw, 0, 0, lw, true, accuracy)
+        ind , lw = solveHelicalInductance(N, p, Dk, dw, 0, 0, True, accuracy)
         if (ind > I):
             N_max = N
         else :
             N_min = N
         
     
-    return N
+    return N , lw
 
-def getOneLayerN_byWindingLength( D, L : float, I : float, _CoilResult *result, accuracy : int) -> float:
+def getOneLayerN_byWindingLength( D, L : float, I : float, result : _CoilResult, accuracy : int) -> float:
     dw = 0
     lTmp = 0
     N = 0
@@ -384,7 +408,7 @@ def getOneLayerN_byWindingLength( D, L : float, I : float, _CoilResult *result, 
         dw = (dw_min + dw_max) / 2
         k = odCalc(dw)
         Dk = D + k
-        N = getOneLayerN_withRoundWire(Dk, dw, k, I, &lw, accuracy)
+        N ,lw = getOneLayerN_withRoundWire(Dk, dw, k, I, accuracy)
         lTmp = N * k + k
         if (lTmp > L):
             dw_max = dw
@@ -395,44 +419,46 @@ def getOneLayerN_byWindingLength( D, L : float, I : float, _CoilResult *result, 
         if (i > 500):
             return 0
     
-    result["sec"] = lw
-    result["five"] = dw
+    result.sec = lw
+    result.five = dw
     return N
 
-def getOneLayerI_withRoundWire(Dk : float, dw : float, p : float, N : float, *lw : float, accuracy : int) -> float:
-    return solveHelicalInductance(N, p, Dk, dw, 0, 0, lw, true, accuracy)
+def getOneLayerI_withRoundWire(Dk : float, dw : float, p : float, N : float, accuracy : int) -> float:
+    ret, lw =  solveHelicalInductance(N, p, Dk, dw, 0, 0, True, accuracy)
+    return ret, lw
 
-def getOneLayerN_withRectWire(Dk : float, w : float, t : float, p : float, I : float, *lw : float, accuracy : int) -> float:
+def getOneLayerN_withRectWire(Dk : float, w : float, t : float, p : float, I : float, accuracy : int) -> float:
 
     k = 2
     N_min = 0
 
     N = math.sqrt(I / (0.0002 * M_PI * Dk * (math.log(1 + M_PI / (2 * k)) + 1 / (2.3004 + 3.437 * k + 1.763 * k * k - 0.47 / math.pow((0.755 + 1 / k), 1.44)))))
-    ind = solveHelicalInductance(N, p, Dk, 0, w, t, lw, false, accuracy)
+    ind , lw = solveHelicalInductance(N, p, Dk, 0, w, t, False, accuracy)
     while (ind < I):
         N_min = N
         N_max = 2 * N
         N = (N_max + N_min) / 2
-        ind = solveHelicalInductance(N, p, Dk, 0, w, t, lw, false, accuracy)
+        ind , lw = solveHelicalInductance(N, p, Dk, 0, w, t, False, accuracy)
     
     N_max = N
     while (math.fabs(1 - (ind / I)) > 0.001):
         N = (N_min + N_max) / 2
-        ind = solveHelicalInductance(N, p, Dk, 0, w, t, lw, false, accuracy)
+        ind , lw = solveHelicalInductance(N, p, Dk, 0, w, t, False, accuracy)
         if (ind > I):
             N_max = N
         else :
             N_min = N
         
     
-    return N
+    return N, lw
 
 
 
-def getOneLayerI_withRectWire(Dk : float, w : float, t : float, p : float, N : float, *lw : float, accuracy : int) -> float:
-    return solveHelicalInductance(N, p, Dk, 0, w, t, lw, false, accuracy)
+def getOneLayerI_withRectWire(Dk : float, w : float, t : float, p : float, N : float, accuracy : int) -> float:
+    res ,lw = solveHelicalInductance(N, p, Dk, 0, w, t, False, accuracy)
+    return res ,lw
 
-def getMultiLayerN(I : float, D : float, dw : float, k : float, lk : float, gap : float, Ng : int, _CoilResult *result):
+def getMultiLayerN(I : float, D : float, dw : float, k : float, lk : float, gap : float, Ng : int, result : _CoilResult):
     n_g = 0
     jg = 0
     D = D / 10
@@ -483,24 +509,24 @@ def getMultiLayerN(I : float, D : float, dw : float, k : float, lk : float, gap 
         
         Ltotal += Lns + M # total summary inductance (adding self-inductance and mutual inductance of current N-turn)
     
-    Resistivity = mtrl[Cu][Rho]*1e2
+    Resistivity = mtrl[Material.Cu][Rho]*1e2
     R = (Resistivity * lw * 4) / (M_PI * dw * dw) # resistance of the wire
     lw0 = lw / 100
     NLayer = nLayer + 1
     NumberInterLayer = math.floor(nLayer / Ng)
     c = NLayer * k * 10 + NumberInterLayer * gap * 10
-    result["N"] = R
-    result["sec"] = lw0
-    result["thd"] = NLayer
-    result["fourth"] = c
-    result["five"] = NumberInterLayer
-    result["six"] = N
+    result.N = R
+    result.sec = lw0
+    result.thd = NLayer
+    result.fourth = c
+    result.five = NumberInterLayer
+    result.six = N
     # return: N(turns) R(resistance) Ohm lw0(length of wire) m
     # NLayer (Number of layer) c (Winding thickness) mm
     # NumberInterLayer (Number of inter-layers)
 
 
-def getMultiLayerN_rectFormer(Ind : float, a : float, b : float, l : float, dw : float, k : float, _CoilResult *result):
+def getMultiLayerN_rectFormer(Ind : float, a : float, b : float, l : float, dw : float, k : float, result : _CoilResult):
     # Calculation formulas of multilayer inductor with rectangular former https://coil32.net/multilayer-rectangular.html
 
     a = a / 10
@@ -514,11 +540,11 @@ def getMultiLayerN_rectFormer(Ind : float, a : float, b : float, l : float, dw :
     b0 = b + k
     lw = 0
     nLayer = 0
-    Nl = floor(l / k) # Number of turns in layer
+    Nl = math.floor(l / k) # Number of turns in layer
     while (Ltotal < Ind):
         n+=1
         Nc = (n - 1) % Nl # Position of the turn on x
-        nLayer = floor((n - 1) / Nl) # Position of the turn on y
+        nLayer = math.floor((n - 1) / Nl) # Position of the turn on y
         nx = Nc * k # x-offset of current turn
         ny = nLayer * k # y-offset of current turn
         lengthNa = a0 + 2 * k * (nLayer)
@@ -536,7 +562,7 @@ def getMultiLayerN_rectFormer(Ind : float, a : float, b : float, l : float, dw :
             for j in range(n, 1, -1):
                 Jc = (j - 2) % Nl # position of previous turn on x
                 jx = Jc * k # x-offset of previous turn
-                jLayer = floor((j - 2) / Nl) # Position of the turn on y
+                jLayer = math.floor((j - 2) / Nl) # Position of the turn on y
                 jy = k * jLayer # y-offset of previous turn
                 lengthJa = a0 + 2 * k * (nLayer + 1) # lenght of straight conductor of previous turn (side a)
                 lengthJb = b0 + 2 * k * (nLayer + 1) # lenght of straight conductor of previous turn (side b)
@@ -557,17 +583,17 @@ def getMultiLayerN_rectFormer(Ind : float, a : float, b : float, l : float, dw :
         Lcor = 0.0002 * M_PI * (a + b) * n * (Ks + Km)
         Ltotal -= Lcor
     
-    Resistivity = mtrl[Cu][Rho]*1e2
+    Resistivity = mtrl[Material.Cu][Rho]*1e2
     Rdc = (Resistivity * lw * 4) / (M_PI * dw * dw)
-    result["N"] = n #number of turns
-    result["sec"] = nLayer + 1 #number of layers
-    result["thd"] = lw * 0.01 #length of wire
-    result["fourth"] = Rdc #resistance to DC
-    result["five"] = (nLayer + 1) * k * 10 #coil thickness
+    result.N = n #number of turns
+    result.sec = nLayer + 1 #number of layers
+    result.thd = lw * 0.01 #length of wire
+    result.fourth = Rdc #resistance to DC
+    result.five = (nLayer + 1) * k * 10 #coil thickness
 
 
 
-def getMultiLayerI_rectFormer_byN(N : float, a : float, b : float, l : float, dw : float, k : float, _CoilResult *result):
+def getMultiLayerI_rectFormer_byN(N : float, a : float, b : float, l : float, dw : float, k : float, result : _CoilResult):
 
     a = a / 10
     b = b / 10
@@ -579,10 +605,10 @@ def getMultiLayerI_rectFormer_byN(N : float, a : float, b : float, l : float, dw
     b0 = b + k
     lw = 0
     nLayer = 0
-    Nl = floor(l / k) # Number of turns in layer
+    Nl = math.floor(l / k) # Number of turns in layer
     for n in range(1, N + 1):
         Nc = (n - 1) % Nl # Position of the turn on x
-        nLayer = floor((n - 1) / Nl) # Position of the turn on y
+        nLayer = math.floor((n - 1) / Nl) # Position of the turn on y
         nx = Nc * k # x-offset of current turn
         ny = nLayer * k # y-offset of current turn
         lengthNa = a0 + 2 * k * (nLayer)
@@ -599,7 +625,7 @@ def getMultiLayerI_rectFormer_byN(N : float, a : float, b : float, l : float, dw
             for j in range(n, 1, -1):
                 Jc = (j - 2) % Nl # position of previous turn on x
                 jx = Jc * k # x-offset of previous turn
-                jLayer = floor((j - 2) / Nl) # Position of the turn on y
+                jLayer = math.floor((j - 2) / Nl) # Position of the turn on y
                 jy = k * jLayer # y-offset of previous turn
                 lengthJa = a0 + 2 * k * (nLayer + 1) # lenght of straight conductor of previous turn (side a)
                 lengthJb = b0 + 2 * k * (nLayer + 1) # lenght of straight conductor of previous turn (side b)
@@ -620,13 +646,13 @@ def getMultiLayerI_rectFormer_byN(N : float, a : float, b : float, l : float, dw
         Lcor = 0.0002 * M_PI * (a + b) * n * (Ks + Km)
         Ltotal -= Lcor
     
-    result["N"] = Ltotal #inductance
-    result["sec"] = nLayer + 1 #number of layers
-    result["thd"] = lw * 0.01 #length of wire
-    result["five"] = (nLayer + 1) * k * 10 #coil thickness
+    result.N = Ltotal #inductance
+    result.sec = nLayer + 1 #number of layers
+    result.thd = lw * 0.01 #length of wire
+    result.five = (nLayer + 1) * k * 10 #coil thickness
 
 
-def getMultiLayerI_byN(D : float, lk : float, dw : float, k : float, N : float, _CoilResult *result):
+def getMultiLayerI_byN(D : float, lk : float, dw : float, k : float, N : float, result : _CoilResult):
     D = D / 10
     lk = lk / 10
     dw = dw / 10
@@ -657,17 +683,18 @@ def getMultiLayerI_byN(D : float, lk : float, dw : float, k : float, N : float, 
         
         Ltotal += Lns + M
     
-    Resistivity = mtrl[Cu][Rho]*1e2
+    Resistivity = mtrl[Material.Cu][Rho]*1e2
     Rdc = (Resistivity * lw * 4) / (M_PI * dw * dw)
-    result["N"] = Ltotal #inductance value
-    result["sec"] = nLayer + 1 #number of layers
-    result["thd"] = lw * 0.01 #length of wire
-    result["fourth"] = Rdc #resistance to DC
-    result["five"] = (nLayer + 1) * k * 10 #coil thickness
+    result.N = Ltotal #inductance value
+    result.sec = nLayer + 1 #number of layers
+    result.thd = lw * 0.01 #length of wire
+    result.fourth = Rdc #resistance to DC
+    result.five = (nLayer + 1) * k * 10 #coil thickness
 
 
-def getMultiLayerI(D : float, lk : float, dw : float, k : float, c : float, gap : float,  Ng : int, _CoilResult *result):
-    n_g = 0, jg = 0
+def getMultiLayerI(D : float, lk : float, dw : float, k : float, c : float, gap : float,  Ng : int, result : _CoilResult):
+    n_g = 0
+    jg = 0
     ind1 = 0
     D = D / 10
     lk = lk / 10
@@ -702,7 +729,7 @@ def getMultiLayerI(D : float, lk : float, dw : float, k : float, c : float, gap 
         lw = lw + 2 * M_PI * ny
         M = 0
         if (n > 1):
-            for j in range(N, 1, -1):
+            for j in range(n, 1, -1):
                 Jc = (j - 2) % Nl
                 jx = Jc * k
                 jLayer = math.floor((j - 2) / Nl)
@@ -725,14 +752,16 @@ def getMultiLayerI(D : float, lk : float, dw : float, k : float, c : float, gap 
     N1 = n - Nl
     N2 = n + Nl
     ind2 = Ltotal
-    result["N"] = ind1
-    result["sec"] = ind2
-    result["thd"] = N1
-    result["fourth"] = N2
+    result.N = ind1
+    result.sec = ind2
+    result.thd = N1
+    result.fourth = N2
 
-def getMultiLayerI_rectFormer(a : float, b : float, l : float, c : float, dw : float, k : float, _CoilResult *result):
+def getMultiLayerI_rectFormer(a : float, b : float, l : float, c : float, dw : float, k : float, result : _CoilResult):
 
-    cTmp = 0, nTmp = 0, ind1 = 0
+    cTmp = 0
+    nTmp = 0
+    ind1 = 0
 
     a = a / 10
     b = b / 10
@@ -746,11 +775,11 @@ def getMultiLayerI_rectFormer(a : float, b : float, l : float, c : float, dw : f
     b0 = b + k
     lw = 0
     nLayer = 0
-    Nl = floor(l / k) # Number of turns in layer
+    Nl = math.floor(l / k) # Number of turns in layer
     while (cTmp < (c + k)):
         n+=1
         Nc = (n - 1) % Nl # Position of the turn on x
-        nLayer = floor((n - 1) / Nl) # Position of the turn on y
+        nLayer = math.floor((n - 1) / Nl) # Position of the turn on y
         nx = Nc * k # x-offset of current turn
         ny = nLayer * k # y-offset of current turn
         lengthNa = a0 + 2 * k * (nLayer) # lenght of straight conductor of current turn (side a)
@@ -767,7 +796,7 @@ def getMultiLayerI_rectFormer(a : float, b : float, l : float, c : float, dw : f
             for j in range(n, 1, -1):
                 Jc = (j - 2) % Nl # position of previous turn on x
                 jx = Jc * k # x-offset of previous turn
-                jLayer = floor((j - 2) / Nl) # Position of the turn on y
+                jLayer = math.floor((j - 2) / Nl) # Position of the turn on y
                 jy = k * jLayer # y-offset of previous turn
                 lengthJa = a0 + 2 * k * (nLayer + 1) # lenght of straight conductor of previous turn (side a)
                 lengthJb = b0 + 2 * k * (nLayer + 1) # lenght of straight conductor of previous turn (side b)
@@ -796,15 +825,15 @@ def getMultiLayerI_rectFormer(a : float, b : float, l : float, c : float, dw : f
     N1 = n - Nl
     N2 = n + Nl
     ind2 = Ltotal
-    result["N"] = ind1
-    result["sec"] = ind2
-    result["thd"] = N1
-    result["fourth"] = N2
+    result.N = ind1
+    result.sec = ind2
+    result.thd = N1
+    result.fourth = N2
 
-def  getMultiLayerI_fromResistance (D : float, lk : float, c : float, k : float, Rm : float, _CoilResult *result):
+def  getMultiLayerI_fromResistance (D : float, lk : float, c : float, k : float, Rm : float, result : _CoilResult):
 
     nLayer = 0
-    aWire[67][5] = [[0.06, 0.075, 0.09, 0.085, 0.09],
+    aWire = [[0.06, 0.075, 0.09, 0.085, 0.09],
                                [0.063, 0.078, 0.09, 0.085, 0.09], [0.07, 0.084, 0.092, 0.092, 0.1], [0.071, 0.088, 0.095, 0.095, 0.1],
                                [0.08, 0.095, 0.105, 0.105, 0.11], [0.09, 0.105, 0.12, 0.115, 0.12], [0.1, 0.122, 0.13, 0.125, 0.13],
                                [0.112, 0.134, 0.14, 0.125, 0.14], [0.12, 0.144, 0.15, 0.145, 0.15], [0.125, 0.149, 0.155, 0.15, 0.155],
@@ -855,7 +884,7 @@ def  getMultiLayerI_fromResistance (D : float, lk : float, c : float, k : float,
             lw = lw + 2 * M_PI * ny
             M = 0
             if (n > 1):
-                for j in range(N, 1, -1):
+                for j in range(n, 1, -1):
                     Jc = (j - 2) % Nl
                     jx = Jc * k
                     jLayer = math.floor((j - 2) / Nl)
@@ -864,7 +893,7 @@ def  getMultiLayerI_fromResistance (D : float, lk : float, c : float, k : float,
                 
             
             Ltotal += Lns + M
-            Resistivity = mtrl[Cu][Rho] * 1e2
+            Resistivity = mtrl[Material.Cu][Rho] * 1e2
             tmpR = (Resistivity * lw * 4) / (M_PI * dw * dw)
         
         bTmp = (nLayer + 1) * k
@@ -872,16 +901,16 @@ def  getMultiLayerI_fromResistance (D : float, lk : float, c : float, k : float,
             break
         if (nTmp < c):
             nTmp = (nLayer + 2) * k
-            result["N"] = Ltotal
+            result.N = Ltotal
         
     
     N1 = n - Nl
     N2 = n + Nl
-    result["sec"] = Ltotal
-    result["thd"] = N1
-    result["fourth"] = N2
+    result.sec = Ltotal
+    result.thd = N1
+    result.fourth = N2
 
-def getMultilayerN_Foil(D : float, w : float, t : float, ins : float, I : float, _CoilResult *result):
+def getMultilayerN_Foil(D : float, w : float, t : float, ins : float, I : float, result : _CoilResult):
     D = D / 10
     w = w / 10
     t = t /10
@@ -913,17 +942,17 @@ def getMultilayerN_Foil(D : float, w : float, t : float, ins : float, I : float,
     th = k * (N - 1)
     Do = (D + 2 * th) *10
     Length_spiral = find_actual_spiral_length(N, D, k) * 10
-    Resistivity_cu = mtrl[Cu][Rho]*1e2
-    Resistivity_al = mtrl[Al][Rho]*1e2
+    Resistivity_cu = mtrl[Material.Cu][Rho]*1e2
+    Resistivity_al = mtrl[Material.Al][Rho]*1e2
     Rdcc = (Resistivity_cu * Length_spiral) / (w * t) / 10 # resistance of the copper foil
     Rdca = (Resistivity_al * Length_spiral) / (w * t) / 10 # resistance of the aliminum foil
-    result["N"] = N
-    result["sec"] = Length_spiral/1000
-    result["thd"] = Do
-    result["fourth"] = Rdcc
-    result["five"] = Rdca
+    result.N = N
+    result.sec = Length_spiral/1000
+    result.thd = Do
+    result.fourth = Rdcc
+    result.five = Rdca
 
-def getMultilayerI_Foil(D : float, w : float, t : float, ins : float, _N : int, _CoilResult *result):
+def getMultilayerI_Foil(D : float, w : float, t : float, ins : float, _N : int, result : _CoilResult):
     D = D / 10
     w = w / 10
     t = t / 10
@@ -952,17 +981,17 @@ def getMultilayerI_Foil(D : float, w : float, t : float, ins : float, _N : int, 
     th = k * (_N - 1)
     Do = (D + 2 * th) *10
     Length_spiral = find_actual_spiral_length(_N, D, k) * 10
-    Resistivity_cu = mtrl[Cu][Rho]*1e2
-    Resistivity_al = mtrl[Al][Rho]*1e2
+    Resistivity_cu = mtrl[Material.Cu][Rho]*1e2
+    Resistivity_al = mtrl[Material.Al][Rho]*1e2
     Rdcc = (Resistivity_cu * Length_spiral) / (w * t) / 10 # resistance of the copper foil
     Rdca = (Resistivity_al * Length_spiral) / (w * t) / 10 # resistance of the aliminum foil
-    result["N"] = Ltotal
-    result["sec"] = Length_spiral / 1000
-    result["thd"] = Do
-    result["fourth"] = Rdcc
-    result["five"] = Rdca
+    result.N = Ltotal
+    result.sec = Length_spiral / 1000
+    result.thd = Do
+    result.fourth = Rdcc
+    result.five = Rdca
 
-def getFerriteN(L : float, Do : float, Di : float, h : float, dw : float, mu : float, Ch : float, _CoilResult *result):
+def getFerriteN(L : float, Do : float, Di : float, h : float, dw : float, mu : float, Ch : float, result : _CoilResult):
     w = 0, wt
     cr = Ch / M_SQRT2 #Chamfer radius
     k = 0.8584 * math.pow(cr, 2) / (h * (Do - Di) / 2) #correction factor for the chamfer
@@ -994,21 +1023,24 @@ def getFerriteN(L : float, Do : float, Di : float, h : float, dw : float, mu : f
             break
     al = round(0.2  * he * mu * math.log(Do / Di))
     lw = 0.001 * Lt
-    result["N"] = w
-    result["sec"] = lw
-    result["thd"] = al
+    result.N = w
+    result.sec = lw
+    result.thd = al
 
-def getFerriteI(N : float, Do : float, Di : float, h : float, mu : float, Ch : float, _CoilResult *result) -> float:
+def getFerriteI(N : float, Do : float, Di : float, h : float, mu : float, Ch : float, result : _CoilResult) -> float:
     cr = Ch / M_SQRT2 #Chamfer radius
     k = 0.8584 * math.pow(cr, 2) / (h * (Do - Di) / 2) #correction factor for the chamfer
     he = h * (1 - k) #correction ΣA/l with chamfer by correcting h
     al = round(0.2  * he * mu * math.log(Do / Di))
-    result["thd"] = al
+    result.thd = al
     return 2e-04 * mu * he * N * N * math.log(Do / Di)
 
-def getPCB_N (I : float, D : float, d : float, ratio : float, layout : int, _CoilResult *result):
+def getPCB_N (I : float, D : float, d : float, ratio : float, layout : int, result : _CoilResult):
 
-    N = 0.5, s = 0, W = 0, iTmp = 0
+    N = 0.5
+    s = 0
+    W = 0
+    iTmp = 0
     while (iTmp < I):
         N = N + 0.01
         s = (D - d) / (2 * N)
@@ -1018,13 +1050,16 @@ def getPCB_N (I : float, D : float, d : float, ratio : float, layout : int, _Coi
     if (s < 0):
         N = 0
     
-    result["N"] = N
-    result["sec"] = s
-    result["thd"] = W
+    result.N = N
+    result.sec = s
+    result.thd = W
 
-def getPCB_I(N : float, _d : float, _s : float, layout : int, _CoilResult *result)  -> float:
+def getPCB_I(N : float, _d : float, _s : float, layout : int, result : _CoilResult)  -> float:
 
-    c1 = 0, c2 = 0, c3 = 0, c4 = 0
+    c1 = 0
+    c2 = 0
+    c3 = 0
+    c4 = 0
 
     if layout == 0:
         c1 = 1.27
@@ -1044,7 +1079,7 @@ def getPCB_I(N : float, _d : float, _s : float, layout : int, _CoilResult *resul
     fi = (D - d) / (D + d)
     I = mu0 * N * N * Davg * c1 * 0.5 * (math.log(c2 / fi) + c3 * fi + c4 * fi * fi)
 
-    result["five"] = D / 1e3
+    result.five = D / 1e3
     return (I)
 
 def log_GMD2(s : float, w : float, h : float) -> float:
@@ -1123,7 +1158,7 @@ def rectPCBSpiral(N : int, a : float, b : float, s : float, w : float, h : float
     
 
 
-def getPCB_RectI(N : int, A : float, B : float, s : float, w : float, th : float, _CoilResult *result) -> float:
+def getPCB_RectI(N : int, A : float, B : float, s : float, w : float, th : float, result : _CoilResult) -> float:
 
     if (N < 2):
         return 0
@@ -1157,33 +1192,33 @@ def getPCB_RectI(N : int, A : float, B : float, s : float, w : float, th : float
         if (rho > ((N - 1.0) / (N + 1.0))):
             return 0
     
-    result["five"] = (A - (N - 1) * s * 2)
+    result.five = (A - (N - 1) * s * 2)
     return rectPCBSpiral(N, a, b, s, w, th)
 
-def getPCB_RectN (I : float, A : float, B : float, _a : float, th : float, ratio : float, _CoilResult *result):
+def getPCB_RectN (I : float, A : float, B : float, _a : float, th : float, ratio : float, result : _CoilResult):
 
     a = A - (A - _a) / 2.0
     iTmp = 0
     s = 0
     w = 0
-    result["N"] = 0
-    result["sec"] = 0
-    result["thd"] = 0
+    result.N = 0
+    result.sec = 0
+    result.thd = 0
     for N in range(2, 10000):
         s = (A - _a) / (N - 1) / 2
         w = s * ratio
         b = B - (N - 1) * s
         iTmp = rectPCBSpiral(N, a, b, s, w , th)
         if ((abs(iTmp - I) / I) < 0.05):
-            result["N"] = N
-            result["sec"] = s
-            result["thd"] = w
+            result.N = N
+            result.sec = s
+            result.thd = w
             break
         
     
 
 
-def getSpiralN(I : float, Di : float, dw : float, s : float, _CoilResult *result):
+def getSpiralN(I : float, Di : float, dw : float, s : float, result : _CoilResult):
     Di = Di / 10
     dw = dw / 10
     s = s / 10
@@ -1209,11 +1244,11 @@ def getSpiralN(I : float, Di : float, dw : float, s : float, _CoilResult *result
     w = k * (N - 1)
     Do = (Di + 2 * w) * 10
     Length_spiral = find_actual_spiral_length(N, Di, k) * 10
-    result["N"] = N
-    result["sec"] = Length_spiral/1000
-    result["thd"] = Do
+    result.N = N
+    result.sec = Length_spiral/1000
+    result.thd = Do
 
-def getSpiralI(Do : float, Di : float, dw : float, _N : int, _CoilResult *result):
+def getSpiralI(Do : float, Di : float, dw : float, _N : int, result : _CoilResult):
 
     Di = Di / 10
     Do = Do / 10
@@ -1236,8 +1271,8 @@ def getSpiralI(Do : float, Di : float, dw : float, _N : int, _CoilResult *result
         Ltotal += Lns + M
     
     Length_spiral = find_actual_spiral_length(_N, Di, k) * 10
-    result["N"] = Ltotal
-    result["sec"] = Length_spiral / 1000
+    result.N = Ltotal
+    result.sec = Length_spiral / 1000
 
 def CalcLC0(L : float, C : float)  -> float:
     f = 1e3 / (2 * M_PI * math.sqrt(L * C))
@@ -1253,20 +1288,20 @@ def CalcLC2(L : float, f : float)  -> float:
     C = math.pow(C1, 2) / L
     return C
 
-def CalcLC3(Zo : float, f : float, _CoilResult *result):
-    result["N"] = 1e6 / (2 * M_PI * f * Zo)
-    result["sec"] = Zo / (2 * M_PI * f)
+def CalcLC3(Zo : float, f : float, result : _CoilResult):
+    result.N = 1e6 / (2 * M_PI * f * Zo)
+    result.sec = Zo / (2 * M_PI * f)
 
-def findToroidPemeability(N : float, I : float, Do : float, Di : float, h : float, Ch : float, _CoilResult *result):
+def findToroidPemeability(N : float, I : float, Do : float, Di : float, h : float, Ch : float, result : _CoilResult):
     cr = Ch / M_SQRT2 #Chamfer radius
     k = 0.8584 * math.pow(cr, 2) / (h * (Do - Di) / 2) #correction factor for the chamfer
     he = h * (1 - k) #correction ΣA/l with chamfer by correcting h
     m = math.ceil(10000 * I / (2 * N * N * he * math.log(Do / Di)))
     al = 1000 * I / (N * N)
-    result["N"] = m
-    result["sec"] = al
+    result.N = m
+    result.sec = al
 
-def findFerriteRodN(I : float, Lr : float, Dr : float, mu : float, dc : float, s : float, dw : float, p : float, _CoilResult *result):
+def findFerriteRodN(I : float, Lr : float, Dr : float, mu : float, dc : float, s : float, dw : float, p : float, result : _CoilResult):
     # Based on "The Inductance of Ferrite Rod Antennas Issue" by Alan Payne
     # [10.1][10.2] http://g3rbj.co.uk/wp-content/uploads/2014/06/Web-The-Inductance-of-Ferrite-Rod-Antennas-issue-3.pdf
 
@@ -1313,17 +1348,17 @@ def findFerriteRodN(I : float, Lr : float, Dr : float, mu : float, dc : float, s
             iTmp = Lc
         
     
-    result["N"] = N
-    result["sec"] = Lf_Lair
-    result["thd"] = lc
+    result.N = N
+    result.sec = Lf_Lair
+    result.thd = lc
 
-def findMeadrPCB_I(a : float, d : float, h : float, W : float, N : int, _CoilResult *result):
+def findMeadrPCB_I(a : float, d : float, h : float, W : float, N : int, result : _CoilResult):
     # http://www.journal.ftn.kg.ac.rs/Vol_1-3/08-Stojanovic-Zivanov-Damnjanovic.pdf (The monomial equation [11])
 
-    result["N"] = 0.00266 * math.pow(a, 0.0603) * math.pow(h, 0.4429) * math.pow(N, 0.954) * math.pow(d, 0.606) * math.pow(W, -0.173)
-    result["sec"] = 2 * N * d + 2 * a
+    result.N = 0.00266 * math.pow(a, 0.0603) * math.pow(h, 0.4429) * math.pow(N, 0.954) * math.pow(d, 0.606) * math.pow(W, -0.173)
+    result.sec = 2 * N * d + 2 * a
 
-def findMultiloop_I(N : float, Di : float, dw : float, dt : float, _CoilResult *result) -> float:
+def findMultiloop_I(N : float, Di : float, dw : float, dt : float, result : _CoilResult) -> float:
     # The author of the source code of this function is George Overton.
     # The source code is used as an open with the consent of the author.
     # The code is from the author's book "Inside the METAL DETECTOR" Appendix A
@@ -1340,14 +1375,14 @@ def findMultiloop_I(N : float, Di : float, dw : float, dt : float, _CoilResult *
     s5 = math.log(8/x)
     s6 = (s4 * s5) - 0.85 + (0.2 * x)
     ind = s3 * s6 #Inductance (microH)
-    result["N"] = 2 * a #Mean coil diameter (mm)
-    result["sec"] = c #coil thickness (mm)
-    result["thd"] = 2e-3 * M_PI * a * N #length of the wire (m)
-    Resistivity_cu = mtrl[Cu][Rho]*1e2
-    result["fourth"] = (Resistivity_cu * result["thd"] * 100 * 4) / (M_PI * dw * dw * 0.01) #Resistance to DC (Ohm)
+    result.N = 2 * a #Mean coil diameter (mm)
+    result.sec = c #coil thickness (mm)
+    result.thd = 2e-3 * M_PI * a * N #length of the wire (m)
+    Resistivity_cu = mtrl[Material.Cu][Rho]*1e2
+    result.fourth = (Resistivity_cu * result.thd * 100 * 4) / (M_PI * dw * dw * 0.01) #Resistance to DC (Ohm)
     return ind
 
-def findMultiloop_N(I : float, Di : float, dw : float, dt : float, _CoilResult *result) -> float:
+def findMultiloop_N(I : float, Di : float, dw : float, dt : float, result : _CoilResult) -> float:
     tmpI = 0
     N = 1
     i = 0
@@ -1355,7 +1390,7 @@ def findMultiloop_N(I : float, Di : float, dw : float, dt : float, _CoilResult *
         i+=1
         tmpI = findMultiloop_I(N, Di, dw, dt, result)
         N += 0.1
-        if ((N > 1e7) or ((i == 1) and (tmpI > I)))
+        if ((N > 1e7) or ((i == 1) and (tmpI > I))):
             return -1
     
     return N
@@ -1373,7 +1408,7 @@ def findRoundLoop_D(Ind : float, dw : float) -> float:
         i+=1
         tmpI = findRoundLoop_I(D, dw)
         D += 0.01
-        if ((D > 2e4) or ((i == 1) and (tmpI > Ind)))
+        if ((D > 2e4) or ((i == 1) and (tmpI > Ind))):
             return -1
     
     return D
@@ -1387,8 +1422,8 @@ def findIsoIsoscelesTriangleLoop_I(_a : float, _b : float, dw : float) -> float:
 
     a1 = 2 * c * math.log(2 * c / r)
     a2 = b * math.log(2 * c / r)
-    a3 = 2 * (b + c) * asinh(b * b / (math.sqrt(4 * b * b * c * c - math.pow(b, 4))))
-    a4 = 2 * c * asinh((2 * c * c - b * b) / (math.sqrt(4 * b * b * c * c - math.pow(b, 4))))
+    a3 = 2 * (b + c) * math.asinh(b * b / (math.sqrt(4 * b * b * c * c - math.pow(b, 4))))
+    a4 = 2 * c * math.asinh((2 * c * c - b * b) / (math.sqrt(4 * b * b * c * c - math.pow(b, 4))))
     a5 = 2 * c + b
     return 0.2 * (a1 + a2 - a3 - a4 - a5)
 
@@ -1429,7 +1464,7 @@ def findRectangleLoop_a(Ind : float, dw : float) -> float:
         i+=1
         tmpI = findRectangleLoop_I(a, a, dw)
         a += 0.01
-        if ((a > 2e4) or ((i == 1) and (tmpI > Ind)))
+        if ((a > 2e4) or ((i == 1) and (tmpI > Ind))):
             return -1
     
     return a
@@ -1450,7 +1485,7 @@ def findAirCoreRoundToroid_N(Ind : float, D1 : float, D2 : float, dw : float )->
     N = math.sqrt(Ind / (0.01257 * ( R - math.sqrt(R * R - a * a))))
     return N
 
-def findPotCore_I(N : float, D1 : float, D2 : float, D3 : float, D4 : float, h1 : float, h2 : float, g : float, b : float, mu : float, _CoilResult *result ) -> float:
+def findPotCore_I(N : float, D1 : float, D2 : float, D3 : float, D4 : float, h1 : float, h2 : float, g : float, b : float, mu : float, result : _CoilResult ) -> float:
     r1 = 0.5 * D4
     r2 = 0.5 * D3
     r3 = 0.5 * D2
@@ -1485,12 +1520,12 @@ def findPotCore_I(N : float, D1 : float, D2 : float, D3 : float, D4 : float, h1 
     Ae = C1 / C2
     mu_e = mu / (1 + g * mu / le)
     ind = 1000 * N * N * mu0 * mu_e / C1
-    result["N"] = le
-    result["sec"] = Ae
-    result["thd"] = mu_e
+    result.N = le
+    result.sec = Ae
+    result.thd = mu_e
     return ind
 
-def findPotCore_N(Ind : float, D1 : float, D2 : float, D3 : float, D4 : float, h1 : float, h2 : float, g : float, b : float, mu : float, _CoilResult *result):
+def findPotCore_N(Ind : float, D1 : float, D2 : float, D3 : float, D4 : float, h1 : float, h2 : float, g : float, b : float, mu : float, result : _CoilResult):
     tmpI = 0
     N = 0
     while (tmpI <= Ind):
@@ -1500,7 +1535,7 @@ def findPotCore_N(Ind : float, D1 : float, D2 : float, D3 : float, D4 : float, h
     return N
 
 def findECore_I(N : float, A : float, B : float, C : float, D : float, E : float, F : float, g : float, b : float, mu : float ,
-                isEI : bool, isRound : bool, _CoilResult *result) -> float:
+                isEI : bool, isRound : bool, result : _CoilResult) -> float:
 
     k = 1
     if (isRound):
@@ -1527,19 +1562,18 @@ def findECore_I(N : float, A : float, B : float, C : float, D : float, E : float
         A3 = 2 * s * q
     A4 = 0.5 * (A1 + A2)
     A5 = 0.5 * (A2 + A3)
-    _MagCoreConst c
-    getFerriteCoreMagConst(l1,l2,l3,l4,l5,A1,A2,A3,A4,A5,&c)
+    c = getFerriteCoreMagConst(l1,l2,l3,l4,l5,A1,A2,A3,A4,A5)
     le = c.C1 * c.C1 / c.C2
     Ae = c.C1 / c.C2
     mu_e = mu / (1 + g * mu / le)
     ind = 1000 * N * N * mu0 * mu_e / c.C1
-    result["N"] = le
-    result["sec"] = Ae
-    result["thd"] = mu_e
+    result.N = le
+    result.sec = Ae
+    result.thd = mu_e
     return ind
 
 def findECore_N(Ind : float, A : float, B : float, C : float, D : float, E : float, F : float, g : float, b : float, mu : float,
-                 isEI : bool, isRound : bool, _CoilResult *result):
+                 isEI : bool, isRound : bool, result : _CoilResult):
     tmpI = 0
     N = 0
     while (tmpI <= Ind):
@@ -1548,7 +1582,7 @@ def findECore_N(Ind : float, A : float, B : float, C : float, D : float, E : flo
     
     return N
 
-def findUCore_I(N : float, A : float, B : float, C : float, D : float, E : float, F : float, s : float, mu : float, _CoilResult *result ) -> float:
+def findUCore_I(N : float, A : float, B : float, C : float, D : float, E : float, F : float, s : float, mu : float, result : _CoilResult ) -> float:
     l1 = 2 * D
     l3 = 2 * D
     h = B - D
@@ -1582,16 +1616,15 @@ def findUCore_I(N : float, A : float, B : float, C : float, D : float, E : float
         A3 = q * y - 0.25 * M_PI * s * s
     A4 = 0.5 * (A1 + A2)
     A5 = 0.5 * (A2 + A3)
-    _MagCoreConst c
-    getFerriteCoreMagConst(l1,l2,l3,l4,l5,A1,A2,A3,A4,A5,&c)
+    c = getFerriteCoreMagConst(l1,l2,l3,l4,l5,A1,A2,A3,A4,A5)
     le = c.C1 * c.C1 / c.C2
     Ae = c.C1 / c.C2
     ind = 1000 * N * N * mu0 * mu / c.C1
-    result["N"] = le
-    result["sec"] = Ae
+    result.N = le
+    result.sec = Ae
     return ind
 
-def findUCore_N(Ind : float, A : float, B : float, C : float, D : float, E : float, F : float, s : float, mu : float, _CoilResult *result):
+def findUCore_N(Ind : float, A : float, B : float, C : float, D : float, E : float, F : float, s : float, mu : float, result : _CoilResult):
     tmpI = 0
     N = 0
     while (tmpI <= Ind):
@@ -1600,7 +1633,7 @@ def findUCore_N(Ind : float, A : float, B : float, C : float, D : float, E : flo
     
     return N
 
-def findRMCore_I (N : float, a : float, b : float, c : float, e : float, d2 : float, d3 : float, d4 : float, h1 : float,  h2, g : float, mu : float, type : int, _CoilResult *result) -> float:
+def findRMCore_I (N : float, a : float, b : float, c : float, e : float, d2 : float, d3 : float, d4 : float, h1 : float,  h2, g : float, mu : float, type : int, result : _CoilResult) -> float:
 
      h = 0.5 * (h1 - h2)
      alpha = M_PI / 2.0
@@ -1655,12 +1688,12 @@ def findRMCore_I (N : float, a : float, b : float, c : float, e : float, d2 : fl
      Ae = C1 / C2
      mu_e = mu / (1 + g * mu / le)
      ind = 1000 * N * N * mu0 * mu_e / C1
-     result["N"] = le
-     result["sec"] = Ae
-     result["thd"] = mu_e
+     result.N = le
+     result.sec = Ae
+     result.thd = mu_e
      return ind
 
-def findRMCore_N (Ind : float, a : float, b : float, c : float, e : float, d2 : float, d3 : float, d4 : float, h1 : float,  h2, g : float, mu : float, type : int, _CoilResult *result):
+def findRMCore_N (Ind : float, a : float, b : float, c : float, e : float, d2 : float, d3 : float, d4 : float, h1 : float,  h2, g : float, mu : float, type : int, result : _CoilResult):
     tmpI = 0
     N = 0
     while (tmpI <= Ind):
@@ -1669,8 +1702,7 @@ def findRMCore_N (Ind : float, a : float, b : float, c : float, e : float, d2 : 
     
     return N
 
-def findBrooksCoil(I : float, d : float, pa : float, pr : float,
-                    &N float, &nLayer : float, &Nc : float, &c : float, &lengthWire : float, &massWire : float, &DCR : float ):
+def findBrooksCoil(I : float, d : float, pa : float, pr : float):
     a = 0.0025491
     _I = 0
     ha = pa * d
@@ -1687,8 +1719,8 @@ def findBrooksCoil(I : float, d : float, pa : float, pr : float,
         c = 0.5 * (ha + d + math.sqrt(discr))
         _I = a * c * N * N
         
-    # Nc = (c / ha  - 1)   # number of turns in the layer
-    # nLayer = math.ceil(N / Nc)     # number of layers
+    Nc = (c / ha  - 1)   # number of turns in the layer
+    nLayer = math.ceil(N / Nc)     # number of layers
     # Calculation of the wire length in all layers except the last
     if (nLayer > 1):
         for j in range(nLayer - 2 + 1):
@@ -1701,9 +1733,11 @@ def findBrooksCoil(I : float, d : float, pa : float, pr : float,
     lengthWireLastLayer = (math.sqrt(ha * ha +math.pow( M_PI * (2 * c + d + 2 * hr * (nLayer - 1)), 2))) * (N - Nc * (nLayer - 1))
     lengthWire += lengthWireLastLayer
     lengthWire = lengthWire / 1000
-    Resistivity = mtrl[Cu][Rho]*1e6
+    Resistivity = mtrl[Material.Cu][Rho]*1e6
     DCR = (Resistivity * lengthWire * 4) / (M_PI * d * d)  # Resistance of the wire to DC [Ohm]
-    # massWire = 2.225 * M_PI * d * d * lengthWire          # Weight of the wire [g]
+    massWire = 2.225 * M_PI * d * d * lengthWire          # Weight of the wire [g]
+
+    return N , nLayer, Nc, c, lengthWire, massWire, DCR
 
 
 def findPadderCapacitance(Ct : float,Cv_low : float,Cv_high : float, Cstray : float, cap_ratio : float)  -> float:
