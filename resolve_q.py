@@ -17,6 +17,8 @@
 
 import math
 from enum import Enum
+from resolves import _CoilResult
+import numpy as np
 
 
 class Material(Enum):
@@ -50,6 +52,7 @@ def LinearInterpolation_Table7_Phi(z: float) -> float:
           0.288, 0.319, 0.349, 0.378, 0.406, 0.432, 0.457, 0.48, 0.501, 0.539, 0.571, 0.599, 0.622, 0.643, 0.661, 0.677, 0.691,
           0.704, 0.716, 0.727, 0.737, 0.746, 0.755, 0.763, 0.782, 0.797, 0.811, 0.823, 0.833, 0.843, 0.851, 0.858]
 
+    result = 0
     if z > 10:
         result = 1 - (M_SQRT2 / z)
     else:
@@ -217,12 +220,11 @@ def LinearInterpolation_Table4_b(r) -> float:
 
 def lookup_Psi(Df, dw, pt, N, fm, mt: Material) -> float:
     # //el->winding length [mm], Df->coilformer diameter [mm], pt->winding pitch [mm], Dw->wire diameter [mm], fm -> frequency [kHz]
-    d, P, rc, f, si, zeta, eta, ro, z, Phi, Chi, v, w, alpha, betta, gamma, pm, a, b, u1, u2, g
     d = dw / 10
     P = pt / 10
     rc = Df / 20
     f = fm * 1e3
-    si = 1e-11 / mtrl[mt][Rho]
+    si = 1e-11 / mtrl[mt.value][Rho]
     eta = d / P
     zeta = P / rc
     ro = (N - 1) * zeta
@@ -253,10 +255,10 @@ def lookup_Psi(Df, dw, pt, N, fm, mt: Material) -> float:
 
 def get_Xir(mt: Material, fm, dw) -> float:
     # //AC resistance factor. TED-MLD formula (skin effect factor)
-    y, z, f, r, delta_i, delta_i_prim
     f = fm * 1e3
     r = dw / 2000
-    delta_i = math.sqrt(mtrl[mt][Rho] / (f * M_PI * mu0 * (1 + mtrl[mt][Chi])))
+    delta_i = math.sqrt(mtrl[mt.value][Rho] /
+                        (f * M_PI * mu0 * (1 + mtrl[mt.value][Chi])))
     delta_i_prim = delta_i * (1 - math.exp(-r / delta_i))
     z = 0.62006 * r / delta_i
     y = 0.189774 / \
@@ -273,7 +275,8 @@ def get_Xir(mt: Material, fm, dw) -> float:
 
 def get_Xic(mt: Material, f, w, t) -> float:
     # //AC resistance factor formula 4.8.1
-    delta = math.sqrt(mtrl[mt][Rho] / (f * M_PI * mu0 * (1 + mtrl[mt][Chi])))
+    delta = math.sqrt(mtrl[mt.value][Rho] /
+                      (f * M_PI * mu0 * (1 + mtrl[mt.value][Chi])))
     p = math.sqrt(w * t)/(1.26 * delta)
     Ff = 1 - math.exp(-0.026 * p)
     x = ((2 * delta / t) * (1 + t / w) + 8 * pow(delta / t, 3) /
@@ -291,11 +294,11 @@ def get_Xic(mt: Material, f, w, t) -> float:
 # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-def solve_Qr(I, Df, pm, dw, fa, N, Cs, mt: Material):
+def solve_Qr(I, Df, pm, dw, fa, N, Cs, mt: Material, result: _CoilResult):
     # //I->inductance µH
     # //l->winding length mm, Df->coilwinding diameter mm, pm->winding pitch mm, dw->wire diameter mm
     # //fm->frequency MHz, N->number of turns, mt->material of wire
-    Induct, fm, f, D, r, p, WireLength, Rdc, Rac0, Rac, Xi, Psi, kQ, R_ind, Rl, Rc
+
     Induct = I * 1.0e-6
     fm = fa * 1e3
     f = fm * 1e3
@@ -303,7 +306,7 @@ def solve_Qr(I, Df, pm, dw, fa, N, Cs, mt: Material):
     r = dw / 2000
     p = pm / 1000
     WireLength = M_PI * N * math.sqrt(D * D + p * p / 4)
-    Rdc = mtrl[mt][Rho] * WireLength / (M_PI * r * r)
+    Rdc = mtrl[mt.value][Rho] * WireLength / (M_PI * r * r)
     Xi = get_Xir(mt, fm, dw)
     Psi = lookup_Psi(Df, dw, pm, N, fm, mt)
     Rac0 = Rdc * (1 + ((Xi - 1) * Psi * (N - 1 + 1 / Psi)) / N)
@@ -312,7 +315,7 @@ def solve_Qr(I, Df, pm, dw, fa, N, Cs, mt: Material):
     Rl = 2 * M_PI * f * Induct
     Rc = 1 / (2 * M_PI * f * Cs * 1e-12)
     R_ind = 1 / (1 / Rl + 1 / Rc)
-    # result->seven = Rac
+    result.seven = Rac
     return round(R_ind / Rac)
 
 # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -320,7 +323,7 @@ def solve_Qr(I, Df, pm, dw, fa, N, Cs, mt: Material):
 # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-def solve_Qc(I, Df, pm, _w, _t, fa,  N, Cs, mt: Material) -> float:
+def solve_Qc(I, Df, pm, _w, _t, fa,  N, Cs, mt: Material, result: _CoilResult) -> float:
     # //I->inductance µH
     # //l->winding length mm, Df->coilwinding diameter mm, pm->winding pitch mm, _w->wire width mm, _t->wire thickness mm
     # //fm->frequency MHz, N->number of turns, mt->material of WireLength
@@ -333,7 +336,7 @@ def solve_Qc(I, Df, pm, _w, _t, fa,  N, Cs, mt: Material) -> float:
     t = _t / 1000
     p = pm / 1000
     WireLength = M_PI * N * math.sqrt(D * D + p * p / 4)
-    Rdc = mtrl[mt][Rho] * WireLength / (w * t)
+    Rdc = mtrl[mt.value][Rho] * WireLength / (w * t)
     Xi = get_Xic(mt, f, w, t)
     Psi = lookup_Psi(Df, _w, pm, N, fm, mt)
     Rac0 = Rdc * (1 + ((Xi - 1) * Psi * (N - 1 + 1 / Psi)) / N)
@@ -342,7 +345,7 @@ def solve_Qc(I, Df, pm, _w, _t, fa,  N, Cs, mt: Material) -> float:
     Rl = 2 * M_PI * f * Induct
     Rc = 1 / (2 * M_PI * f * Cs * 1e-12)
     R_ind = 1 / (1 / Rl + 1 / Rc)
-    # result->seven = Rac
+    result.seven = Rac
     return round(R_ind / Rac)
 
 # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -369,7 +372,7 @@ def solve_Qpcb(N, I, D, d, W, t, s,  f, layout: layoutType) -> float:
     StripLength = 0
     if layout == layoutType.Square:
         StripLength += d / 2
-        for i in range(N):
+        for i in np.arange(0, N):
             StripLength += 2 * (2 * d + (4 * i + 1) * s)
 
         StripLength -= D / 2

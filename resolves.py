@@ -405,7 +405,7 @@ def getFerriteCoreMagConst(l1: float, l2: float, l3: float, l4: float, l5: float
 # PUBLIC FUNCTIONS REALIZATION
 
 
-def getOneLayerN_withRoundWire(Dk: float, dw: float, p: float, I: float, accuracy: int) -> float:
+def getOneLayerN_withRoundWire(Dk: float, dw: float, p: float, I: float, accuracy: int):
 
     k = 2
     N_min = 0
@@ -463,7 +463,7 @@ def getOneLayerI_withRoundWire(Dk: float, dw: float, p: float, N: float, accurac
     return ret, lw
 
 
-def getOneLayerN_withRectWire(Dk: float, w: float, t: float, p: float, I: float, accuracy: int) -> float:
+def getOneLayerN_withRectWire(Dk: float, w: float, t: float, p: float, I: float, accuracy: int):
 
     k = 2
     N_min = 0
