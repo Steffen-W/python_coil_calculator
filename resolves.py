@@ -1367,7 +1367,7 @@ def getSpiralI(Do: float, Di: float, dw: float, _N: int, result: _CoilResult):
     k = w / (_N - 1)
     r0 = (Di + dw) / 2
     Ltotal = 0
-    for N in range(1, _N):
+    for N in np.arange(1, _N):
         ny = r0 + k * (N - 1)
         Lns = Mut(ny, ny, g, 0)
         M = 0

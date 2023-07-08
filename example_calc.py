@@ -7,15 +7,15 @@ result = resolves._CoilResult()
 
 # not working # _Onelayer_cw  # One layer close-winding coil
 # not working # _Onelayer     # One layer coil with round wire
-# ok  working # _Onelayer_p   # One layer coil with rect wire
-# ok  working # _Onelayer_q   # One layer coil on a polygonal former
-# ok  working # _Multilayer   # Multilayer coil
-# ok  working # _Multilayer_p # Multilayer coil with insulated pads
-# ok  working # _Multilayer_r # Multilayer coil on a rectangular former
+# is  working # _Onelayer_p   # One layer coil with rect wire
+# is  working # _Onelayer_q   # One layer coil on a polygonal former
+# is  working # _Multilayer   # Multilayer coil
+# is  working # _Multilayer_p # Multilayer coil with insulated pads
+# is  working # _Multilayer_r # Multilayer coil on a rectangular former
 # not working # _Multilayer_f # Multilayer foil-wound coil
-# ok  working # _FerrToroid   # Ferrite toroid coil
+# is  working # _FerrToroid   # Ferrite toroid coil
 # ok  working # _PCB_coil     # PCB flat coil
-# ok  working # _Flat_Spiral  # Tesla flat spiral coil
+# is  working # _Flat_Spiral  # Tesla flat spiral coil
 
 
 # ERROR: currently unusable
@@ -124,6 +124,7 @@ def calc_Onelayer_p():  # One layer coil with rect wire
 
 
 def calc_Onelayer_q():  # One layer coil on a polygonal former
+    # https://coil32.net/one-layer-air-core-coil.html
     # /images/res/Coil3.png
 
     I = 10  # Inductance L
@@ -159,6 +160,7 @@ def calc_Onelayer_q():  # One layer coil on a polygonal former
 
 
 def calc_Multilayer():  # Multilayer coil
+    # https://coil32.net/multi-layer-coil.html
     # /images/res/Coil4.png
 
     I = 10  # Inductance L
@@ -177,6 +179,7 @@ def calc_Multilayer():  # Multilayer coil
 
 
 def calc_Multilayer_p():  # Multilayer coil with insulated pads
+    # https://coil32.net/multi-layer-coil.html
     # /images/res/Coil4-0.png
 
     I = 10  # Inductance L
@@ -198,6 +201,7 @@ def calc_Multilayer_p():  # Multilayer coil with insulated pads
 
 
 def calc_Multilayer_r():  # Multilayer coil on a rectangular former
+    # https://coil32.net/multilayer-rectangular.html
     # /images/res/Coil4_square.png
 
     I = 10  # Inductance L
@@ -218,6 +222,7 @@ def calc_Multilayer_r():  # Multilayer coil on a rectangular former
 
 # dont work correct !
 def calc_Multilayer_f():  # Multilayer foil-wound coil
+    # https://coil32.net/foil-wound-coil-calculation.html
     # /images/res/Coil11.png
 
     I = 10  # Inductance L
@@ -240,6 +245,7 @@ def calc_Multilayer_f():  # Multilayer foil-wound coil
 
 
 def calc_FerrToroid():
+    # https://coil32.net/ferrite-toroid-core.html
     # /images/res/T-core.png
 
     I = 10  # Inductance L
@@ -259,6 +265,8 @@ def calc_FerrToroid():
 
 # only Square and Spiral are working!
 def calc_PCB_coil():
+    # https://coil32.net/pcb-coil.html
+
     I = 6  # Inductance L
     f = 1  # Frequency f
 
@@ -301,6 +309,7 @@ def calc_PCB_coil():
 
 
 def calc_Flat_Spiral():
+    # https://coil32.net/foil-wound-coil-calculation.html
     # /images/res/Coil10.png
 
     I = 0.311  # Inductance L
