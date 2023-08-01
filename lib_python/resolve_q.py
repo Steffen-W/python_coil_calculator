@@ -17,7 +17,7 @@
 
 import math
 from enum import Enum
-from resolves import _CoilResult
+from lib_python.resolves import _CoilResult
 import numpy as np
 
 

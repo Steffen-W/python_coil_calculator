@@ -1,6 +1,6 @@
-import resolves
-import resolve_q
-import resolve_srf_cs
+import lib_python.resolves as resolves
+import lib_python.resolve_q as resolve_q
+import lib_python.resolve_srf_cs as resolve_srf_cs
 
 result = resolves._CoilResult()
 

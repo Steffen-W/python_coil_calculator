@@ -1,6 +1,6 @@
 from enum import Enum
 import math
-import resolve_q
+import lib_python.resolve_q as resolve_q
 
 # based on https://coil32.net/pcb-coil.html
 
