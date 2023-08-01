@@ -15,6 +15,94 @@ using namespace std;
 static PyObject *convert2Dict(std::map<std::string, double> result);
 
 // Python-Wrapper für die C++ Funktion
+static PyObject *py_getOneLayerN_byWindingLength(PyObject *self, PyObject *args)
+{
+    double D, L, I;
+    unsigned int accuracy = 1;
+    if (!PyArg_ParseTuple(args, "ddd", &D, &L, &I))
+        return NULL;
+
+    _CoilResult result;
+    double res = getOneLayerN_byWindingLength(D, L, I, &result, accuracy);
+
+    std::map<std::string, double>
+        data = {
+            {"lw", result.sec},
+            {"dw", result.five},
+            {"N", res}};
+
+    return convert2Dict(data);
+}
+
+static PyObject *py_getOneLayerN_Poligonal(PyObject *self, PyObject *args)
+{
+    double I, Dk, dw, p, n;
+    unsigned int accuracy = 1;
+    if (!PyArg_ParseTuple(args, "ddddd", &I, &Dk, &dw, &p, &n))
+        return NULL;
+
+    _CoilResult result;
+    double res = getOneLayerN_Poligonal(I, Dk, dw, p, n, &result, accuracy);
+
+    std::map<std::string, double> data = {
+        {"p * N", result.sec},
+        {"lw", result.thd},
+        {"iDk", result.seven},
+        {"N", res}};
+
+    return convert2Dict(data);
+}
+
+static PyObject *py_odCalc(PyObject *self, PyObject *args)
+{
+    double id;
+    if (!PyArg_ParseTuple(args, "d", &id))
+        return NULL;
+
+    double result = odCalc(id);
+
+    return PyFloat_FromDouble(result);
+}
+
+static PyObject *py_find_Cs(PyObject *self, PyObject *args)
+{
+    double p, Dk, lk;
+    if (!PyArg_ParseTuple(args, "ddd", &p, &Dk, &lk))
+        return NULL;
+
+    double result = find_Cs(p, Dk, lk);
+
+    return PyFloat_FromDouble(result);
+}
+
+static PyObject *py_solve_Qr(PyObject *self, PyObject *args)
+{
+    double I, Df, pm, dw, fa, N, Cs;
+    int mt;
+    if (!PyArg_ParseTuple(args, "dddddddi", &I, &Df, &pm, &dw, &fa, &N, &Cs, &mt))
+        return NULL;
+
+    _CoilResult result;
+    double res = solve_Qr(I, Df, pm, dw, fa, N, Cs, (Material)mt, &result);
+
+    std::map<std::string, double> data = {
+        {"Rac", result.seven},
+        {"R_ind / Rac", res}};
+
+    return convert2Dict(data);
+}
+
+static PyObject *py_findSRF(PyObject *self, PyObject *args)
+{
+    double lk, Dk, lw;
+    if (!PyArg_ParseTuple(args, "ddd", &lk, &Dk, &lw))
+        return NULL;
+
+    double result = findSRF(lk, Dk, lw);
+
+    return PyFloat_FromDouble(result);
+}
+
 static PyObject *py_getMultiLayerN(PyObject *self, PyObject *args)
 {
     double I, D, dw, k, lk, g, Ng;
@@ -22,7 +110,7 @@ static PyObject *py_getMultiLayerN(PyObject *self, PyObject *args)
         return NULL;
 
     _CoilResult result;
-    getMultiLayerN(I, D, dw, k, lk, g, Ng, &result); // get Number of turns for Multi-layer coil
+    getMultiLayerN(I, D, dw, k, lk, g, Ng, &result);
 
     std::map<std::string, double> data = {
         {"Number turns", result.six},
@@ -44,7 +132,7 @@ static PyObject *py_getMultiLayerN_rectFormer(PyObject *self, PyObject *args)
         return NULL;
 
     _CoilResult result;
-    getMultiLayerN_rectFormer(Ind, a, b, l, dw, k, &result); // get Number of turns for Multi-layer coil
+    getMultiLayerN_rectFormer(Ind, a, b, l, dw, k, &result);
 
     std::map<std::string, double> data = {
         {"Number turns", result.N},
@@ -63,7 +151,7 @@ static PyObject *py_getMultilayerN_Foil(PyObject *self, PyObject *args)
         return NULL;
 
     _CoilResult result;
-    getMultilayerN_Foil(D, w, t, ins, I, &result); // get Number of turns for Multi-layer coil
+    getMultilayerN_Foil(D, w, t, ins, I, &result);
 
     std::map<std::string, double> data = {
         {"Number turns", result.N},
@@ -82,7 +170,7 @@ static PyObject *py_getFerriteN(PyObject *self, PyObject *args)
         return NULL;
 
     _CoilResult result;
-    getFerriteN(L, Do, Di, h, dw, mu, Ch, &result); // get Number of turns for Multi-layer coil
+    getFerriteN(L, Do, Di, h, dw, mu, Ch, &result);
 
     std::map<std::string, double> data = {
         {"Number turns", result.N},
@@ -165,6 +253,12 @@ static PyMethodDef methods[] = {
     {"getMultiLayerN", py_getMultiLayerN, METH_VARARGS, "getMultiLayerN"},
     {"getMultilayerN_Foil", py_getMultilayerN_Foil, METH_VARARGS, "getMultilayerN_Foil"},
     {"getMultiLayerN_rectFormer", py_getMultiLayerN_rectFormer, METH_VARARGS, "getMultiLayerN_rectFormer"},
+    {"getOneLayerN_byWindingLength", py_getOneLayerN_byWindingLength, METH_VARARGS, "getOneLayerN_byWindingLength"},
+    {"getOneLayerN_Poligonal", py_getOneLayerN_Poligonal, METH_VARARGS, "getOneLayerN_Poligonal"},
+    {"odCalc", py_odCalc, METH_VARARGS, "odCalc"},
+    {"find_Cs", py_find_Cs, METH_VARARGS, "find_Cs"},
+    {"solve_Qr", py_solve_Qr, METH_VARARGS, "solve_Qr"},
+    {"findSRF", py_findSRF, METH_VARARGS, "findSRF"},
     {NULL, NULL, 0, NULL} // Sentinel-Wert am Ende der Methodenliste
 };
 

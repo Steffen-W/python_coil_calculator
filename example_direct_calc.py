@@ -24,6 +24,35 @@ class layoutType(Enum):
     Rectangular = 2
 
 
+def calc_Onelayer_cw():  # One layer close-winding coil
+    # /images/res/Coil1.png
+    I = 10  # Inductance L
+    f = 1  # Frequency f
+
+    D = 15  # Former diameter
+    l = 10  # Winding length
+
+    mt = Material.Cu
+
+    result = coil64_lib.getOneLayerN_byWindingLength(D, l, I)
+    od = coil64_lib.odCalc(result["dw"])
+    Dk = D + od
+
+    Cs = coil64_lib.find_Cs(
+        od, Dk, od * result["N"])  # self-capacitance
+    result2 = coil64_lib.solve_Qr(
+        I, Dk, od, result["dw"], f, result["N"], Cs, mt.value)  # Q-factor
+    # self-resonance frequency
+    srf = coil64_lib.findSRF(od * result["N"], Dk, result["lw"])
+
+    print("Number of turns of the coil {}".format(result["N"]))
+    print("Length of wire without leads lw = {} m".format(result["lw"]))
+    print("Self capacitance Cs = {} pF".format(Cs))
+    print("Coil self-resonance frequency Fsr = {} MHz".format(srf))
+    print("Coil constructive Q-factor = {}".format(result2["R_ind / Rac"]))
+    print("Loss resistance ESR = {} Ohm".format(result2["Rac"]))
+
+
 def calc_Multilayer():  # Multilayer coil
     # https://coil32.net/multi-layer-coil.html
     # /images/res/Coil4.png
@@ -193,7 +222,7 @@ def calc_Flat_Spiral():
     print("Length of wire without leads lw = {} m".format(
         result["Length spiral"]))
 
-
+# calc_Onelayer_cw()
 # calc_Multilayer()
 # calc_Multilayer_p()
 # calc_Multilayer_r()
