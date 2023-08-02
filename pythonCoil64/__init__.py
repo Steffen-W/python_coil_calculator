@@ -48,12 +48,13 @@ def calc_Onelayer_cw(I=10.0, f=1.0, D=15.0, l=10.0, mt=Material.Cu):
         I, Dk, od, result["dw"], f, result["N"], Cs, mt.value)
     srf = coil64_lib.findSRF(od * result["N"], Dk, result["lw"])
 
-    print("Number of turns of the coil {}".format(result["N"]))
-    print("Length of wire without leads lw = {} m".format(result["lw"]))
-    print("Self capacitance Cs = {} pF".format(Cs))
-    print("Coil self-resonance frequency Fsr = {} MHz".format(srf))
-    print("Coil constructive Q-factor = {}".format(result2["R_ind / Rac"]))
-    print("Loss resistance ESR = {} Ohm".format(result2["Rac"]))
+    print("Number of turns of the coil {:.3f}".format(result["N"]))
+    print("Length of wire without leads lw = {:.3f} mm".format(
+        1000*result["lw"]))
+    print("Self capacitance Cs = {:.3f} pF".format(Cs))
+    print("Coil self-resonance frequency Fsr = {:.3f} MHz".format(srf))
+    print("Coil constructive Q-factor = {:.3f}".format(result2["R_ind / Rac"]))
+    print("Loss resistance ESR = {:.3f} Ohm".format(result2["Rac"]))
     result["R_ind / Rac"] = result2["R_ind / Rac"]
     result["Rac"] = result2["Rac"]
     result["Cs"] = Cs
@@ -86,15 +87,15 @@ def calc_Onelayer_cw(I=10.0, f=1.0, D=15.0, l=10.0, mt=Material.Cu):
 #     result.six = resolve_q.solve_Qr(
 #         I, result.seven, p, d, f, result.N, result.fourth, mt, result)
 
-#     print("Number of turns of the coil N = {}".format(result.N))
-#     print("Length of wire without leads lw = {} m".format(result.thd))
-#     print("Length of winding l = {} mm".format(result.sec))
-#     # print("DC resistance of the coil Rdc = {} Ohm".format(result.))
-#     # print("Reactance of the coil X = {} Ohm".format(result.))
-#     print("Self capacitance Cs = {} pF".format(result.fourth))
-#     print("Coil self-resonance frequency Fsr = {} MHz".format(result.five))
-#     print("Coil constructive Q-factor Q = {}".format(result.six))
-#     print("Loss resistance ESR = {} Ohm".format(result.seven))
+#     print("Number of turns of the coil N = {:.3f}".format(result.N))
+#     print("Length of wire without leads lw = {:.3f} mm".format(1000*result.thd))
+#     print("Length of winding l = {:.3f} mm".format(result.sec))
+#     # print("DC resistance of the coil Rdc = {:.3f} Ohm".format(result.))
+#     # print("Reactance of the coil X = {:.3f} Ohm".format(result.))
+#     print("Self capacitance Cs = {:.3f} pF".format(result.fourth))
+#     print("Coil self-resonance frequency Fsr = {:.3f} MHz".format(result.five))
+#     print("Coil constructive Q-factor Q = {:.3f}".format(result.six))
+#     print("Loss resistance ESR = {:.3f} Ohm".format(result.seven))
 
 def calc_Onelayer_p(I=10, f=1.0, D=10.0, w=1.0, t=0.1, i=0.1, p=1.5, mt=Material.Cu):
     """One layer coil with rect wire
@@ -127,16 +128,18 @@ def calc_Onelayer_p(I=10, f=1.0, D=10.0, w=1.0, t=0.1, i=0.1, p=1.5, mt=Material
     result["Q"] = result2["Q"]
     result["Rac"] = result2["Rac"]
 
-    print("Number of turns of the coil N = {}".format(result["N"]))
-    print("Length of wire without leads lw = {} m".format(result["lw"]))
+    print("Number of turns of the coil N = {:.3f}".format(result["N"]))
+    print("Length of wire without leads lw = {:.3f} mm".format(
+        1000*result["lw"]))
     # print("Length of winding l = 115.43 mm".format(result.))
     # print("DC resistance of the coil Rdc = 0.418 Ohm".format(result.))
     # print("Reactance of the coil X = 31.416 Ohm".format(result.))
 
     print("Self capacitance Cs = 1.418 pF".format(result["Cs"]))
-    print("Coil self-resonance frequency Fsr = {} MHz".format(result["SRF"]))
-    print("Coil constructive Q-factor Q = {}".format(result["Q"]))
-    print("Loss resistance ESR = {} Ohm".format(result["Rac"]))
+    print(
+        "Coil self-resonance frequency Fsr = {:.3f} MHz".format(result["SRF"]))
+    print("Coil constructive Q-factor Q = {:.3f}".format(result["Q"]))
+    print("Loss resistance ESR = {:.3f} Ohm".format(result["Rac"]))
     return result
 
 
@@ -167,12 +170,14 @@ def calc_L_Onelayer(N=15, f=1.0, D=15.0, d=0.1, k=0.11, p=1.5, mt=Material.Cu):
     result["Rac"] = result2["Rac"]
     result["Q"] = result2["R_ind / Rac"]
 
-    print("Inductance L = {} uH".format(result["L"]))
-    print("Length of wire without leads lw = {} m".format(result["lw"]))
-    print("Self capacitance Cs = {} pF".format(result["Cs"]))
-    print("Coil self-resonance frequency Fsr = {} MHz".format(result["SRF"]))
-    print("Coil constructive Q-factor Q = {}".format(result["Q"]))
-    print("Loss resistance ESR = {} Ohm".format(result["Rac"]))
+    print("Inductance L = {:.3f} uH".format(result["L"]))
+    print("Length of wire without leads lw = {:.3f} mm".format(
+        1000*result["lw"]))
+    print("Self capacitance Cs = {:.3f} pF".format(result["Cs"]))
+    print(
+        "Coil self-resonance frequency Fsr = {:.3f} MHz".format(result["SRF"]))
+    print("Coil constructive Q-factor Q = {:.3f}".format(result["Q"]))
+    print("Loss resistance ESR = {:.3f} Ohm".format(result["Rac"]))
     return result
 
 
@@ -194,12 +199,13 @@ def calc_Multilayer(I=20.0, D=8.0, lk=5.0, d=0.1, k=0.109):
 
     result = coil64_lib.getMultiLayerN(I, D, d, k, lk, 0, -1)
 
-    print("Number of turns of the coil N = {}".format(
+    print("Number of turns of the coil N = {:.3f}".format(
         result['Number turns']))  # TODO: can be wrong!
-    print("Thickness of the coil c = {} mm".format(result['Thickness']))
-    print("Length of wire without leads lw = {} m".format(result['Length']))
-    print("DC resistance of the coil Rdc = {} Ohm".format(result['R_DC']))
-    print("Number of layers Nl = {}".format(result['Number layers']))
+    print("Thickness of the coil c = {:.3f} mm".format(result['Thickness']))
+    print("Length of wire without leads lw = {:.3f} mm".format(
+        1000*result['Length']))
+    print("DC resistance of the coil Rdc = {:.3f} Ohm".format(result['R_DC']))
+    print("Number of layers Nl = {:.3f}".format(result['Number layers']))
     return result
 
 
@@ -223,12 +229,14 @@ def calc_Multilayer_p(I=10.0, D=15.0, lk=8.0, d=0.1, k=0.11, g=0.1, Ng=5.0):
 
     result = coil64_lib.getMultiLayerN(I, D, d, k, lk, g, Ng)
 
-    print("Number of turns of the coil N = {}".format(result["Number turns"]))
-    print("Thickness of the coil c = {} mm".format(result["Thickness"]))
-    print("Length of wire without leads lw = {} m".format(result["Length"]))
-    print("DC resistance of the coil Rdc = {} Ohm".format(result["R_DC"]))
-    print("Number of layers Nl = {}".format(result["Number layers"]))
-    print("Number of interlayers Ng = {}".format(result["Ng"]))
+    print("Number of turns of the coil N = {:.3f}".format(
+        result["Number turns"]))
+    print("Thickness of the coil c = {:.3f} mm".format(result["Thickness"]))
+    print("Length of wire without leads lw = {:.3f} mm".format(
+        1000*result["Length"]))
+    print("DC resistance of the coil Rdc = {:.3f} Ohm".format(result["R_DC"]))
+    print("Number of layers Nl = {:.3f}".format(result["Number layers"]))
+    print("Number of interlayers Ng = {:.3f}".format(result["Ng"]))
     return result
 
 
@@ -251,12 +259,13 @@ def calc_Multilayer_r(I=10.0, a=5.0, b=2.0, l=8.0, d=0.1, k=0.11):
 
     result = coil64_lib.getMultiLayerN_rectFormer(I, a, b, l, d, k)
 
-    print("Number of turns of the coil N = {}".format(result["Number turns"]))
-    print("Number of layers Nl = {}".format(result["Number layers"]))
-    print("Thickness of the coil c = {} mm".format(result["thickness"]))
-    print("Length of wire without leads lw = {} m".format(
-        result["Length wire"]))
-    print("DC resistance of the coil Rdc = {} Ohm".format(result["Rdc"]))
+    print("Number of turns of the coil N = {:.3f}".format(
+        result["Number turns"]))
+    print("Number of layers Nl = {:.3f}".format(result["Number layers"]))
+    print("Thickness of the coil c = {:.3f} mm".format(result["thickness"]))
+    print("Length of wire without leads lw = {:.3f} mm".format(1000 *
+                                                               result["Length wire"]))
+    print("DC resistance of the coil Rdc = {:.3f} Ohm".format(result["Rdc"]))
     return result
 
 
@@ -279,12 +288,14 @@ def calc_Multilayer_f(I=10.0, D=15.0, w=12.0, t=0.1, g=0.01):
     ins = g
     result = coil64_lib.getMultilayerN_Foil(D, w, t, ins, I)
 
-    print("Number of turns of the coil N = {}".format(result["Number turns"]))
-    print("Outside diameter Do = {} mm".format(result["Do"]))
-    print("Length of the foil lf = {} m".format(result["Length spiral"]))
-    print("DC resistance of the coil Rdc = {} Ohm (Copper)".format(
+    print("Number of turns of the coil N = {:.3f}".format(
+        result["Number turns"]))
+    print("Outside diameter Do = {:.3f} mm".format(result["Do"]))
+    print("Length of the foil lf = {:.3f} mm".format(
+        1000*result["Length spiral"]))
+    print("DC resistance of the coil Rdc = {:.3f} Ohm (Copper)".format(
         result["Rdcc"]))
-    print("DC resistance of the coil Rdc = {} Ohm (Aluminum)".format(
+    print("DC resistance of the coil Rdc = {:.3f} Ohm (Aluminum)".format(
         result["Rdca"]))
     return result
 
@@ -292,8 +303,7 @@ def calc_Multilayer_f(I=10.0, D=15.0, w=12.0, t=0.1, g=0.01):
 def calc_L_Multilayer_f(N=10, D=15.0, w=10.0, t=0.1, g=0.01):
     """Multilayer foil-wound coil
     https://coil32.net/foil-wound-coil-calculation.html
-    /images/res/Coil11.png
-
+    https://github.com/radioacoustick/Coil64/tree/master/res/Coil11.png
 
     Args:
         N (int): Number of turns. Defaults to 10.
@@ -309,18 +319,18 @@ def calc_L_Multilayer_f(N=10, D=15.0, w=10.0, t=0.1, g=0.01):
     ins = g
     result = coil64_lib.getMultilayerI_Foil(D, w, t, ins, N)
 
-    print("Inductance L = {} uH".format(result["L"]))
-    print("Length of the foil lf = {} m".format(result["Length"]))
-    print("Outside diameter Do = {} mm".format(result["Do"]))
-    print("DC resistance of the coil Rdc = {} Ohm (Copper)".format(
+    print("Inductance L = {:.3f} uH".format(result["L"]))
+    print("Length of the foil lf = {:.3f} mm".format(1000*result["Length"]))
+    print("Outside diameter Do = {:.3f} mm".format(result["Do"]))
+    print("DC resistance of the coil Rdc = {:.3f} Ohm (Copper)".format(
         result["R_DC"]))
-    print("DC resistance of the coil Rdc = {} Ohm (Aluminum)".format(
+    print("DC resistance of the coil Rdc = {:.3f} Ohm (Aluminum)".format(
         result["R_AC"]))
     return result
 
 
 def calc_FerrToroid(I=10.0, OD=30.0, ID=10.0, h=5.0, d=0.0, mu=10.0, C=0.0):
-    """
+    """calc_FerrToroid
     https://coil32.net/ferrite-toroid-core.html
     https://github.com/radioacoustick/Coil64/tree/master/res/T-core.png
 
@@ -339,17 +349,18 @@ def calc_FerrToroid(I=10.0, OD=30.0, ID=10.0, h=5.0, d=0.0, mu=10.0, C=0.0):
 
     result = coil64_lib.getFerriteN(I, OD, ID, h, d, mu, C)
 
-    print("Number of turns of the coil N = {}".format(result["Number turns"]))
-    print("Length of wire without leads lw = {} m".format(
-        result["Length wire"]))
-    print("AL = {} nH/N2".format(result["Al"]))
+    print("Number of turns of the coil N = {:.3f}".format(
+        result["Number turns"]))
+    print("Length of wire without leads lw = {:.3f} mm".format(1000 *
+                                                               result["Length wire"]))
+    print("AL = {:.3f} nH/N2".format(result["Al"]))
     return result
 
 
 def calc_L_FerrToroid(N=5, OD=20.0, ID=10.0, h=5.0, mu=10.0, C=0.0):
     """calc_L_FerrToroid
     https://coil32.net/ferrite-toroid-core.html
-    /images/res/T-core.png
+    https://github.com/radioacoustick/Coil64/tree/master/res/T-core.png
 
     Args:
         N (int, optional): Number of turns. Defaults to 5.
@@ -365,8 +376,8 @@ def calc_L_FerrToroid(N=5, OD=20.0, ID=10.0, h=5.0, mu=10.0, C=0.0):
 
     result = coil64_lib.getFerriteI(N, OD, ID, h, mu, C)
 
-    print("Inductance L = {} uH".format(result["L"]))
-    print("A_L = {} nH/N^2".format(result["Al"]))
+    print("Inductance L = {:.3f} uH".format(result["L"]))
+    print("A_L = {:.3f} nH/N^2".format(result["Al"]))
     return result
 
 
@@ -399,10 +410,11 @@ def calc_PCB_coil_Square(I=10.0, f=1.0, D=20.0, d=5.0, t=0.1, ratio=0.6):
     else:
         result["Q"] = 0
 
-    print("Number of turns of the coil N = {}".format(result["Number turns"]))
-    print("Winding pitch s = {}mm".format(result["Winding pitch"]))
-    print("Width of a PCB trace W = {} mm".format(result["Width"]))
-    print("Coil constructive Q-factor Q ≈ {}".format(result["Q"]))
+    print("Number of turns of the coil N = {:.3f}".format(
+        result["Number turns"]))
+    print("Winding pitch s = {:.3f} mm".format(result["Winding pitch"]))
+    print("Width of a PCB trace W = {:.3f} mm".format(result["Width"]))
+    print("Coil constructive Q-factor Q ≈ {:.3f}".format(result["Q"]))
     return result
 
 
@@ -432,9 +444,9 @@ def calc_L_PCB_coil_Square(N=5, f=1.0, d=10.0, s=1.0, W=0.5, t=0.1):
     result["Q"] = coil64_lib.solve_Qpcb(
         N, result["L"], A, B, W, t, s, f, layoutPCB.value)
 
-    print("Inductance L (uH) = {} uH".format(result["L"]))
-    print("Outside diameter D = {} mm".format(result["Do"]))
-    print("Coil constructive Q-factor Q ≈ {}".format(result["Q"]))
+    print("Inductance L (uH) = {:.3f} uH".format(result["L"]))
+    print("Outside diameter D = {:.3f} mm".format(result["Do"]))
+    print("Coil constructive Q-factor Q ≈ {:.3f}".format(result["Q"]))
     return result
 
 
@@ -466,10 +478,11 @@ def calc_PCB_coil_Spiral(I=10.0, f=1.0, D=20.0, d=5.0, t=0.1, ratio=0.6):
     else:
         result["Q"] = 0
 
-    print("Number of turns of the coil N = {}".format(result["Number turns"]))
-    print("Winding pitch s = {}mm".format(result["Winding pitch"]))
-    print("Width of a PCB trace W = {} mm".format(result["Width"]))
-    print("Coil constructive Q-factor Q ≈ {}".format(result["Q"]))
+    print("Number of turns of the coil N = {:.3f}".format(
+        result["Number turns"]))
+    print("Winding pitch s = {:.3f} mm".format(result["Winding pitch"]))
+    print("Width of a PCB trace W = {:.3f} mm".format(result["Width"]))
+    print("Coil constructive Q-factor Q ≈ {:.3f}".format(result["Q"]))
     return result
 
 
@@ -499,9 +512,9 @@ def calc_L_PCB_coil_Spiral(N=5, f=1.0, d=10.0, s=1.0, W=0.5, t=0.1):
     result["Q"] = coil64_lib.solve_Qpcb(
         N, result["L"], A, B, W, t, s, f, layoutPCB.value)
 
-    print("Inductance L (uH) = {} uH".format(result["L"]))
-    print("Outside diameter D = {} mm".format(result["Do"]))
-    print("Coil constructive Q-factor Q ≈ {}".format(result["Q"]))
+    print("Inductance L (uH) = {:.3f} uH".format(result["L"]))
+    print("Outside diameter D = {:.3f} mm".format(result["Do"]))
+    print("Coil constructive Q-factor Q ≈ {:.3f}".format(result["Q"]))
     return result
 
 
@@ -537,17 +550,18 @@ def calc_PCB_coil_Rectangular(I=10.0, f=1.0, A=20.0, B=15.0, a=5.0, t=0.1, ratio
     else:
         result["Q"] = 0
 
-    print("Number of turns of the coil N = {}".format(result["Number turns"]))
-    print("Winding pitch s = {}mm".format(result["Winding pitch"]))
-    print("Width of a PCB trace W = {} mm".format(result["Width"]))
-    print("Coil constructive Q-factor Q ≈ {}".format(result["Q"]))
+    print("Number of turns of the coil N = {:.3f}".format(
+        result["Number turns"]))
+    print("Winding pitch s = {:.3f} mm".format(result["Winding pitch"]))
+    print("Width of a PCB trace W = {:.3f} mm".format(result["Width"]))
+    print("Coil constructive Q-factor Q ≈ {:.3f}".format(result["Q"]))
     return result
 
 
 def calc_L_PCB_coil_Rectangular(N=5, f=1.0, A=20.0, B=20.0, s=1.0, W=0.5, t=0.1):
     """calc_L_PCB_coil_Rectangular
     https://coil32.net/pcb-coil.html
-    /images/res/Coil8r.png
+    https://github.com/radioacoustick/Coil64/tree/master/res/Coil8r.png
 
     Args:
         N (int): Number of turns. Defaults to 5.
@@ -569,9 +583,9 @@ def calc_L_PCB_coil_Rectangular(N=5, f=1.0, A=20.0, B=20.0, s=1.0, W=0.5, t=0.1)
     result["Q"] = coil64_lib.solve_Qpcb(
         N, result["L"], A, B, W, t, s, f, layoutPCB.value)
 
-    print("Inductance L (uH) = {} uH".format(result["L"]))
-    print("Outside diameter D = {} mm".format(result["Do"]))
-    print("Coil constructive Q-factor Q ≈ {}".format(result["Q"]))
+    print("Inductance L (uH) = {:.3f} uH".format(result["L"]))
+    print("Outside diameter D = {:.3f} mm".format(result["Do"]))
+    print("Coil constructive Q-factor Q ≈ {:.3f}".format(result["Q"]))
     return result
 
 
@@ -592,10 +606,11 @@ def calc_Flat_Spiral(I=10.0, Di=5.0, d=0.1, s=0.75):
 
     result = coil64_lib.getSpiralN(I, Di, d, s)
 
-    print("Number of turns of the coil N = {}".format(result["Number turns"]))
-    print("Outside diameter Do = {} mm".format(result["Do"]))
-    print("Length of wire without leads lw = {} m".format(
-        result["Length spiral"]))
+    print("Number of turns of the coil N = {:.3f}".format(
+        result["Number turns"]))
+    print("Outside diameter Do = {:.3f} mm".format(result["Do"]))
+    print("Length of wire without leads lw = {:.3f} mm".format(1000 *
+                                                               result["Length spiral"]))
     return result
 
 
@@ -616,9 +631,9 @@ def calc_L_Flat_Spiral(N=5, OD=25.0, ID=10.0, d=0.1):
 
     result = coil64_lib.getSpiralI(OD, ID, d, N)
 
-    print("Inductance L = {} uH".format(result["Number turns"]))
-    print("Length of wire without leads lw = {} m".format(
-        result["Length spiral"]))
+    print("Inductance L = {:.3f} uH".format(result["Number turns"]))
+    print("Length of wire without leads lw = {:.3f} mm".format(1000 *
+                                                               result["Length spiral"]))
     return result
 
 
