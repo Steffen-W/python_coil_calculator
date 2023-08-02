@@ -5,7 +5,10 @@ import matplotlib.pyplot as plt
 
 # the library must be compiled
 # g++ -shared -o coil64_lib.so -fPIC -I /usr/include/python3.10 -lpython3.10 *.cpp
-import coil64_lib
+# import coil64_lib
+
+import build.coil64_lib as coil64_lib
+
 
 from enum import Enum
 import numpy as np
@@ -138,17 +141,28 @@ def calc_Multilayer_f():  # Multilayer foil-wound coil
         result["Rdca"]))
 
 
-def calc_FerrToroid():
+def calc_FerrToroid(
+        I=10.0,
+        OD=30.0,
+        ID=10.0,
+        h=5.0,
+        d=0.0,
+        mu=10.0,
+        C=0.0):
+    """_summary_
+
     # https://coil32.net/ferrite-toroid-core.html
     # /images/res/T-core.png
 
-    I = 10  # Inductance L
-    OD = 30  # Outside diameter
-    ID = 10  # Inside diameter
-    h = 5  # Core height
-    d = 0.1  # Wire diameter
-    mu = 10  # Init magnetic permeability
-    C = 0  # Chamfer
+    Args:
+        I (float): Inductance L. Defaults to 10.0.
+        OD (float): Outside diameter. Defaults to 30.0.
+        ID (float): Inside diameter. Defaults to 10.0.
+        h (float): Core height. Defaults to 5.0.
+        d (float): Wire diameter. Defaults to 0.0.
+        mu (float): Init magnetic permeability. Defaults to 10.0.
+        C (float): Chamfer. Defaults to 0.0.
+    """
 
     result = coil64_lib.getFerriteN(I, OD, ID, h, d, mu, C)
 

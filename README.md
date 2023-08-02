@@ -7,5 +7,11 @@ USE OF THE CODE AT YOUR OWN RISK!
 
 The Python code is used for easy implementation of automated calculations, which were not possible because of missing API to Coil64.
 
+The Code based on: https://github.com/radioacoustick/Coil64/commit/6532d3ee6c6e5264e533abf201ee716ee4b7c1fd
+
 ## usage of the code
 Examples for using the code can be found in [example_calc.py](example_calc.py) and [example_calc_L.py](example_calc_L.py). 
+
+
+python setup.py build
+pip install .

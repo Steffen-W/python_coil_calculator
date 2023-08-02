@@ -15,6 +15,117 @@ using namespace std;
 static PyObject *convert2Dict(std::map<std::string, double> result);
 
 // Python-Wrapper für die C++ Funktion
+
+static PyObject *py_getOneLayerI_withRoundWire(PyObject *self, PyObject *args)
+{
+    // getOneLayerI_withRoundWire(D, d, p, N, accuracy)
+    double Dk, dw, p, N;
+    unsigned int accuracy = 1;
+    if (!PyArg_ParseTuple(args, "dddd", &Dk, &dw, &p, &N))
+        return NULL;
+
+    double lw;
+    double res = getOneLayerI_withRoundWire(Dk, dw, p, N, &lw, accuracy);
+
+    std::map<std::string, double> data = {
+        {"lw", lw},
+        {"L", res}};
+
+    return convert2Dict(data);
+}
+
+static PyObject *py_getMultilayerI_Foil(PyObject *self, PyObject *args)
+{
+    // getMultilayerI_Foil(D, w, t, ins, N, result)
+    double D, w, t, ins;
+    int _N;
+    if (!PyArg_ParseTuple(args, "ddddi", &D, &w, &t, &ins, &_N))
+        return NULL;
+
+    _CoilResult result;
+    getMultilayerI_Foil(D, w, t, ins, _N, &result);
+
+    std::map<std::string, double> data = {
+        {"L", result.N},
+        {"Length", result.sec},
+        {"Do", result.thd},
+        {"R_DC", result.fourth},
+        {"R_AC", result.five}};
+
+    return convert2Dict(data);
+}
+
+static PyObject *py_getFerriteI(PyObject *self, PyObject *args)
+{
+    // getFerriteI(N, OD, ID, h, mu, C, result)
+    double N, Do, Di, h, mu, Ch;
+    if (!PyArg_ParseTuple(args, "dddddd", &N, &Do, &Di, &h, &mu, &Ch))
+        return NULL;
+
+    _CoilResult result;
+    double res = getFerriteI(N, Do, Di, h, mu, Ch, &result);
+
+    std::map<std::string, double> data = {
+        {"L", res},
+        {"Al", result.thd}};
+
+    return convert2Dict(data);
+}
+
+static PyObject *py_getPCB_I(PyObject *self, PyObject *args)
+{
+    // getPCB_I(N, d, s, layoutPCB.value, result)
+    double N, _d, _s;
+    int layout;
+    if (!PyArg_ParseTuple(args, "dddi", &N, &_d, &_s, &layout))
+        return NULL;
+
+    _CoilResult result;
+    double res = getPCB_I(N, _d, _s, layout, &result);
+
+    std::map<std::string, double> data = {
+        {"Do", result.five},
+        {"L", res}};
+
+    return convert2Dict(data);
+}
+
+static PyObject *py_getPCB_RectI(PyObject *self, PyObject *args)
+{
+    // getPCB_RectI(N, A, B, s, W, t, result)
+    int N;
+    double A, B, s, w, th;
+    if (!PyArg_ParseTuple(args, "iddddd", &N, &A, &B, &s, &w, &th))
+        return NULL;
+
+    _CoilResult result;
+    double res = getPCB_RectI(N, A, B, s, w, th, &result);
+
+    std::map<std::string, double> data = {
+        {"Do", result.five},
+        {"L", res}};
+
+    return convert2Dict(data);
+}
+
+static PyObject *py_getSpiralI(PyObject *self, PyObject *args)
+{
+    // getSpiralI(OD, ID, d, N, result)
+    double Do, Di, dw;
+    int _N;
+    if (!PyArg_ParseTuple(args, "dddi", &Do, &Di, &dw, &_N))
+        return NULL;
+
+    _CoilResult result;
+    getSpiralI(Do, Di, dw, _N, &result);
+
+    std::map<std::string, double> data = {
+        {"Number turns", result.N},
+        {"Length spiral", result.sec}};
+
+    return convert2Dict(data);
+}
+
 static PyObject *py_getOneLayerN_byWindingLength(PyObject *self, PyObject *args)
 {
     double D, L, I;
@@ -25,11 +136,10 @@ static PyObject *py_getOneLayerN_byWindingLength(PyObject *self, PyObject *args)
     _CoilResult result;
     double res = getOneLayerN_byWindingLength(D, L, I, &result, accuracy);
 
-    std::map<std::string, double>
-        data = {
-            {"lw", result.sec},
-            {"dw", result.five},
-            {"N", res}};
+    std::map<std::string, double> data = {
+        {"lw", result.sec},
+        {"dw", result.five},
+        {"N", res}};
 
     return convert2Dict(data);
 }
@@ -49,6 +159,40 @@ static PyObject *py_getOneLayerN_Poligonal(PyObject *self, PyObject *args)
         {"lw", result.thd},
         {"iDk", result.seven},
         {"N", res}};
+
+    return convert2Dict(data);
+}
+
+static PyObject *py_getOneLayerN_withRectWire(PyObject *self, PyObject *args)
+{
+    double Dk, w, t, p, I;
+    if (!PyArg_ParseTuple(args, "ddddd", &Dk, &w, &t, &p, &I))
+        return NULL;
+
+    unsigned int accuracy = 1;
+    double lw;
+    double res = getOneLayerN_withRectWire(Dk, w, t, p, I, &lw, accuracy);
+
+    std::map<std::string, double> data = {
+        {"lw", lw},
+        {"N", res}};
+
+    return convert2Dict(data);
+}
+
+static PyObject *py_solve_Qc(PyObject *self, PyObject *args)
+{
+    double I, Df, pm, _w, _t, fa, N, Cs;
+    int mt;
+    if (!PyArg_ParseTuple(args, "ddddddddi", &I, &Df, &pm, &_w, &_t, &fa, &N, &Cs, &mt))
+        return NULL;
+
+    _CoilResult result;
+    unsigned long int res = solve_Qc(I, Df, pm, _w, _t, fa, N, Cs, (Material)mt, &result);
+
+    std::map<std::string, double> data = {
+        {"Rac", result.seven},
+        {"Q", res}};
 
     return convert2Dict(data);
 }
@@ -119,8 +263,6 @@ static PyObject *py_getMultiLayerN(PyObject *self, PyObject *args)
         {"R_DC", result.N},
         {"Ng", result.five},
         {"Number layers", result.thd}};
-
-    // print("Number of interlayers Ng = {}".format(result.five))
 
     return convert2Dict(data);
 }
@@ -240,6 +382,7 @@ static PyObject *py_getSpiralN(PyObject *self, PyObject *args)
         {"Number turns", result.N},
         {"Length spiral", result.sec},
         {"Do", result.thd}};
+
     return convert2Dict(data);
 }
 
@@ -256,9 +399,17 @@ static PyMethodDef methods[] = {
     {"getOneLayerN_byWindingLength", py_getOneLayerN_byWindingLength, METH_VARARGS, "getOneLayerN_byWindingLength"},
     {"getOneLayerN_Poligonal", py_getOneLayerN_Poligonal, METH_VARARGS, "getOneLayerN_Poligonal"},
     {"odCalc", py_odCalc, METH_VARARGS, "odCalc"},
+    {"solve_Qc", py_solve_Qc, METH_VARARGS, "solve_Qc"},
+    {"getOneLayerN_withRectWire", py_getOneLayerN_withRectWire, METH_VARARGS, "getOneLayerN_withRectWire"},
     {"find_Cs", py_find_Cs, METH_VARARGS, "find_Cs"},
     {"solve_Qr", py_solve_Qr, METH_VARARGS, "solve_Qr"},
     {"findSRF", py_findSRF, METH_VARARGS, "findSRF"},
+    {"getOneLayerI_withRoundWire", py_getOneLayerI_withRoundWire, METH_VARARGS, "getOneLayerI_withRoundWire"},
+    {"getMultilayerI_Foil", py_getMultilayerI_Foil, METH_VARARGS, "getMultilayerI_Foil"},
+    {"getFerriteI", py_getFerriteI, METH_VARARGS, "getFerriteI"},
+    {"getPCB_I", py_getPCB_I, METH_VARARGS, "getPCB_I"},
+    {"getPCB_RectI", py_getPCB_RectI, METH_VARARGS, "getPCB_RectI"},
+    {"getSpiralI", py_getSpiralI, METH_VARARGS, "getSpiralI"},
     {NULL, NULL, 0, NULL} // Sentinel-Wert am Ende der Methodenliste
 };
 
