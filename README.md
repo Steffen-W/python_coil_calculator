@@ -9,9 +9,9 @@ The Python code is used for easy implementation of automated calculations, which
 
 The Code based on: https://github.com/radioacoustick/Coil64/commit/6532d3ee6c6e5264e533abf201ee716ee4b7c1fd
 
-## usage of the code
-Examples for using the code can be found in [example_calc.py](example_calc.py) and [example_calc_L.py](example_calc_L.py). 
+## usage of the code (100% Python implementation)
+Examples for using the code can be found in [example_calc.py](lib_python/example_calc.py) and [example_calc_L.py](lib_python/example_calc_L.py). 
 
-
+## usage of c-code lib
 python setup.py build
 pip install .
