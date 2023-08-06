@@ -1,7 +1,7 @@
 
 
-from matplotlib import patches
-import matplotlib.pyplot as plt
+# from matplotlib import patches
+# import matplotlib.pyplot as plt
 
 # the library must be compiled
 # g++ -shared -o coil64_lib.so -fPIC -I /usr/include/python3.10 -lpython3.10 *.cpp
@@ -87,7 +87,8 @@ def calc_Onelayer_cw(I=10.0, f=1.0, D=15.0, l=10.0, mt=Material.Cu):
 #     result.six = resolve_q.solve_Qr(
 #         I, result.seven, p, d, f, result.N, result.fourth, mt, result)
 
-#     print("Number of turns of the coil N = {:.3f}".format(result.N))
+#     print("Number of turns of the coil N = {:.3f}".format(result.N))# from matplotlib import patches
+# import matplotlib.pyplot as plt
 #     print("Length of wire without leads lw = {:.3f} mm".format(1000*result.thd))
 #     print("Length of winding l = {:.3f} mm".format(result.sec))
 #     # print("DC resistance of the coil Rdc = {:.3f} Ohm".format(result.))
@@ -734,6 +735,8 @@ def draw_coil(num_windings, pitch, wire_width, outer_length=0, inner_length=0):
         outer_length (int, optional): outer_length (mm). Defaults to 0.
         inner_length (int, optional): inner_length (mm). Defaults to 0.
     """
+
+    import matplotlib.pyplot as plt
 
     if (outer_length == 0 and inner_length > 0):
         outer_length = inner_length + pitch * 2 * num_windings

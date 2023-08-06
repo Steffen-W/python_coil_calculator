@@ -1,5 +1,6 @@
 Coil64
 *.so
+*.o
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
