@@ -250,11 +250,12 @@ static PyObject *py_findSRF(PyObject *self, PyObject *args)
 static PyObject *py_getMultiLayerN(PyObject *self, PyObject *args)
 {
     double I, D, dw, k, lk, g, Ng;
-    if (!PyArg_ParseTuple(args, "ddddddd", &I, &D, &dw, &k, &lk, &g, &Ng))
+    bool isOrthocyclic;
+    if (!PyArg_ParseTuple(args, "dddddddp", &I, &D, &dw, &k, &lk, &g, &Ng, &isOrthocyclic))
         return NULL;
 
     _CoilResult result;
-    getMultiLayerN(I, D, dw, k, lk, g, Ng, &result);
+    getMultiLayerN(I, D, dw, k, lk, g, Ng, &result, isOrthocyclic);
 
     std::map<std::string, double> data = {
         {"Number turns", result.six},

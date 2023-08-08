@@ -182,7 +182,7 @@ def calc_L_Onelayer(N=15, f=1.0, D=15.0, d=0.1, k=0.11, p=1.5, mt=Material.Cu):
     return result
 
 
-def calc_Multilayer(I=20.0, D=8.0, lk=5.0, d=0.1, k=0.109):
+def calc_Multilayer(I=20.0, D=8.0, lk=5.0, d=0.1, k=0.109, windingKind=True):
     """Multilayer coil
     https://coil32.net/multi-layer-coil.html
     https://github.com/radioacoustick/Coil64/tree/master/res/Coil4.png
@@ -193,12 +193,13 @@ def calc_Multilayer(I=20.0, D=8.0, lk=5.0, d=0.1, k=0.109):
         lk (float): Winding length (mm). Defaults to 5.0.
         d (float): Wire diameter (mm). Defaults to 0.1.
         k (float): Wire diameter with insulation (mm). Defaults to 0.109.
+        windingKind (bool, optional): lines are staggered into each other. Defaults to True.
 
     Returns:
         _type_: result
     """
 
-    result = coil64_lib.getMultiLayerN(I, D, d, k, lk, 0, -1)
+    result = coil64_lib.getMultiLayerN(I, D, d, k, lk, 0, -1, windingKind)
 
     print("Number of turns of the coil N = {:.3f}".format(
         result['Number turns']))  # TODO: can be wrong!
@@ -228,7 +229,7 @@ def calc_Multilayer_p(I=10.0, D=15.0, lk=8.0, d=0.1, k=0.11, g=0.1, Ng=5.0):
         _type_: result
     """
 
-    result = coil64_lib.getMultiLayerN(I, D, d, k, lk, g, Ng)
+    result = coil64_lib.getMultiLayerN(I, D, d, k, lk, g, Ng, False)
 
     print("Number of turns of the coil N = {:.3f}".format(
         result["Number turns"]))

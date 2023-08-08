@@ -551,7 +551,7 @@ double getOneLayerI_withRectWire(double Dk, double w, double t, double p, double
     return solveHelicalInductance(N, p, Dk, 0, w, t, lw, false, accuracy);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void getMultiLayerN(double I, double D, double dw, double k, double lk, double gap, long Ng, _CoilResult *result)
+void getMultiLayerN(double I, double D, double dw, double k, double lk, double gap, long Ng, _CoilResult *result, bool isOrthocyclic)
 {
     double n_g = 0;
     double jg = 0;
@@ -584,18 +584,37 @@ void getMultiLayerN(double I, double D, double dw, double k, double lk, double g
         {
             n_g = 0;
         }
-        double nx = Nc * k;                // x-offset of turn
-        double ny = r0 + k * nLayer + n_g; // y-offset of turn
-        double Lns = Mut(ny, ny, g, 0);    // self inductance of current turn
-        lw = lw + 2 * M_PI * ny;           // length of wire with the current turn
-        double M = 0;                      // start calculation loop of the mutual inductance - current turn (N) + all another turns (j)
+        double nx; // x-offset of turn
+        if ((isOrthocyclic) && ((nLayer % 2) != 0))
+        {
+            nx = Nc * k + dens * k;
+        }
+        else
+            nx = Nc * k;
+        double ny; // y-offset of turn
+        if (isOrthocyclic)
+        {
+            ny = r0 + dens * k * nLayer + n_g;
+        }
+        else
+            ny = r0 + k * nLayer + n_g;
+        double Lns = Mut(ny, ny, g, 0); // self inductance of current turn
+        lw = lw + 2 * M_PI * ny;        // length of wire with the current turn
+        double M = 0;                   // start calculation loop of the mutual inductance - current turn (N) + all another turns (j)
         if (N > 1)
         {
             int j;
             for (j = N; j >= 2; j--)
             {
                 double Jc = (j - 2) % Nl;
-                double jx = Jc * k;
+
+                double jx; // x-offset of turn
+                if ((isOrthocyclic) && ((nLayer % 2) != 0))
+                {
+                    jx = Jc * k + dens * k;
+                }
+                else
+                    jx = Jc * k;
                 int jLayer = (int)floor((j - 2) / Nl);
                 if (((jLayer % Ng) == 0) && (jLayer > 0))
                 {
@@ -605,7 +624,13 @@ void getMultiLayerN(double I, double D, double dw, double k, double lk, double g
                 {
                     jg = 0;
                 }
-                double jy = r0 + k * jLayer + jg;
+                double jy;
+                if (isOrthocyclic)
+                {
+                    jy = r0 + dens * k * jLayer + jg;
+                }
+                else
+                    jy = r0 + k * jLayer + jg;
                 M = M + 2 * Mut(ny, jy, nx - jx, g); // mutual inductance
                 // between current
                 // N-turn and j-turn
@@ -618,7 +643,11 @@ void getMultiLayerN(double I, double D, double dw, double k, double lk, double g
     double lw0 = lw / 100;
     double NLayer = nLayer + 1;
     double NumberInterLayer = (double)floor(nLayer / Ng);
-    double c = NLayer * k * 10 + NumberInterLayer * gap * 10;
+    double c;
+    if (isOrthocyclic)
+        c = NLayer * dens * k * 10 + NumberInterLayer * gap * 10;
+    else
+        c = NLayer * k * 10 + NumberInterLayer * gap * 10;
     result->N = R;
     result->sec = lw0;
     result->thd = NLayer;
@@ -768,7 +797,7 @@ void getMultiLayerI_rectFormer_byN(double N, double a, double b, double l, doubl
     result->five = (nLayer + 1) * k * 10; // coil thickness
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void getMultiLayerI_byN(double D, double lk, double dw, double k, double N, _CoilResult *result)
+void getMultiLayerI_byN(double D, double lk, double dw, double k, double N, _CoilResult *result, bool isOrthocyclic)
 {
     D = D / 10;
     lk = lk / 10;
@@ -785,8 +814,18 @@ void getMultiLayerI_byN(double D, double lk, double dw, double k, double N, _Coi
     {
         Nc = (w - 1) % Nl;
         nLayer = (int)floor((w - 1) / Nl);
-        nx = Nc * k;
-        ny = r0 + k * nLayer;
+        if ((isOrthocyclic) && ((nLayer % 2) != 0))
+        {
+            nx = Nc * k + dens * k;
+        }
+        else
+            nx = Nc * k;
+        if (isOrthocyclic)
+        {
+            ny = r0 + dens * k * nLayer;
+        }
+        else
+            ny = r0 + k * nLayer;
         Lns = Mut(ny, ny, g, 0);
         // self inductance of current turn
         lw = lw + 2 * M_PI * ny;
@@ -796,9 +835,19 @@ void getMultiLayerI_byN(double D, double lk, double dw, double k, double N, _Coi
             for (int j = w; j >= 2; j--)
             {
                 Jc = (j - 2) % Nl;
-                jx = Jc * k;
+                if ((isOrthocyclic) && ((nLayer % 2) != 0))
+                {
+                    jx = Jc * k + dens * k;
+                }
+                else
+                    jx = Jc * k;
                 jLayer = (int)floor((j - 2) / Nl);
-                jy = r0 + k * jLayer;
+                if (isOrthocyclic)
+                {
+                    jy = r0 + dens * k * jLayer;
+                }
+                else
+                    jy = r0 + k * jLayer;
                 M = M + 2 * Mut(ny, jy, nx - jx, g);
             }
         }
@@ -806,14 +855,19 @@ void getMultiLayerI_byN(double D, double lk, double dw, double k, double N, _Coi
     }
     double Resistivity = mtrl[Cu][Rho] * 1e2;
     double Rdc = (Resistivity * lw * 4) / (M_PI * dw * dw);
-    result->N = Ltotal;                   // inductance value
-    result->sec = nLayer + 1;             // number of layers
-    result->thd = lw * 0.01;              // length of wire
-    result->fourth = Rdc;                 // resistance to DC
-    result->five = (nLayer + 1) * k * 10; // coil thickness
+    double thickness;
+    if (isOrthocyclic)
+        thickness = (nLayer + 1) * dens * k * 10;
+    else
+        thickness = (nLayer + 1) * k * 10;
+    result->N = Ltotal;       // inductance value
+    result->sec = nLayer + 1; // number of layers
+    result->thd = lw * 0.01;  // length of wire
+    result->fourth = Rdc;     // resistance to DC
+    result->five = thickness; // coil thickness
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void getMultiLayerI(double D, double lk, double dw, double k, double c, double gap, long Ng, _CoilResult *result)
+void getMultiLayerI(double D, double lk, double dw, double k, double c, double gap, long Ng, _CoilResult *result, bool isOrthocyclic)
 {
     double bTmp, nTmp, lw, Lns, Ltotal, r0, M, g, nx, ny, jx, jy, n_g = 0, jg = 0, ind1, ind2, N1, N2;
     int n, Nl, j, Nc, Jc, nLayer, jLayer;
@@ -849,8 +903,18 @@ void getMultiLayerI(double D, double lk, double dw, double k, double c, double g
         {
             n_g = 0;
         }
-        nx = Nc * k;
-        ny = r0 + k * nLayer + n_g;
+        if ((isOrthocyclic) && ((nLayer % 2) != 0))
+        {
+            nx = Nc * k + dens * k;
+        }
+        else
+            nx = Nc * k;
+        if (isOrthocyclic)
+        {
+            ny = r0 + dens * k * nLayer + n_g;
+        }
+        else
+            ny = r0 + k * nLayer + n_g;
         Lns = Mut(ny, ny, g, 0);
         // self inductance of current turn
         lw = lw + 2 * M_PI * ny;
@@ -860,7 +924,12 @@ void getMultiLayerI(double D, double lk, double dw, double k, double c, double g
             for (j = n; j >= 2; j--)
             {
                 Jc = (j - 2) % Nl;
-                jx = Jc * k;
+                if ((isOrthocyclic) && ((nLayer % 2) != 0))
+                {
+                    jx = Jc * k + dens * k;
+                }
+                else
+                    jx = Jc * k;
                 jLayer = (int)floor((j - 2) / Nl);
                 if (((jLayer % Ng) == 0) && (jLayer > 0))
                 {
@@ -870,7 +939,12 @@ void getMultiLayerI(double D, double lk, double dw, double k, double c, double g
                 {
                     jg = 0;
                 }
-                jy = r0 + k * jLayer + jg;
+                if (isOrthocyclic)
+                {
+                    jy = r0 + dens * k * jLayer + jg;
+                }
+                else
+                    jy = r0 + k * jLayer + jg;
                 M = M + 2 * Mut(ny, jy, nx - jx, g);
             }
         }
@@ -970,7 +1044,7 @@ void getMultiLayerI_rectFormer(double a, double b, double l, double c, double dw
     result->fourth = N2;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void getMultiLayerI_fromResistance(double D, double lk, double c, double k, double Rm, _CoilResult *result)
+void getMultiLayerI_fromResistance(double D, double lk, double c, double k, double Rm, _CoilResult *result, bool isOrthocyclic)
 {
 
     double dw, bTmp, nTmp, tmpR, lw, Lns, Ltotal, r0, M, g, nx, ny, jx, jy, N1, N2;
@@ -1065,8 +1139,18 @@ void getMultiLayerI_fromResistance(double D, double lk, double c, double k, doub
             n++;
             Nc = (n - 1) % Nl;
             nLayer = (int)floor((n - 1) / Nl);
-            nx = Nc * k;
-            ny = r0 + k * nLayer;
+            if ((isOrthocyclic) && ((nLayer % 2) != 0))
+            {
+                nx = Nc * k + dens * k;
+            }
+            else
+                nx = Nc * k;
+            if (isOrthocyclic)
+            {
+                ny = r0 + dens * k * nLayer;
+            }
+            else
+                ny = r0 + k * nLayer;
             Lns = Mut(ny, ny, g, 0);
             // self inductance of current turn
             lw = lw + 2 * M_PI * ny;
@@ -1076,9 +1160,19 @@ void getMultiLayerI_fromResistance(double D, double lk, double c, double k, doub
                 for (j = n; j >= 2; j--)
                 {
                     Jc = (j - 2) % Nl;
-                    jx = Jc * k;
+                    if ((isOrthocyclic) && ((nLayer % 2) != 0))
+                    {
+                        jx = Jc * k + dens * k;
+                    }
+                    else
+                        jx = Jc * k;
                     jLayer = (int)floor((j - 2) / Nl);
-                    jy = r0 + k * jLayer;
+                    if (isOrthocyclic)
+                    {
+                        jy = r0 + dens * k * jLayer;
+                    }
+                    else
+                        jy = r0 + k * jLayer;
                     M = M + 2 * Mut(ny, jy, nx - jx, g);
                 }
             }

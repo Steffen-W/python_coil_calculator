@@ -35,7 +35,7 @@ extern double odCalc(double id);
 extern double find_Cs(double p, double Dk, double lk);
 extern unsigned long int solve_Qr(double I, double Df, double pm, double dw, double fa, double N, double Cs, int mt, _CoilResult *result);
 extern double findSRF(double lk, double Dk, double lw);
-extern void getMultiLayerN(double I, double D, double dw, double k, double lk, double gap, long Ng, _CoilResult *result);
+extern void getMultiLayerN(double I, double D, double dw, double k, double lk, double gap, long Ng, _CoilResult *result, bool isOrthocyclic);
 extern void getMultiLayerN_rectFormer(double Ind, double a, double b, double l, double dw, double k, _CoilResult *result);
 extern void getMultilayerN_Foil(double D, double w, double t, double ins, double I, _CoilResult *result);
 extern void getFerriteN(double L, double Do, double Di, double h, double dw, double mu, double Ch, _CoilResult *result);
@@ -355,11 +355,12 @@ static PyObject *py_findSRF(PyObject *self, PyObject *args)
 static PyObject *py_getMultiLayerN(PyObject *self, PyObject *args)
 {
     double I, D, dw, k, lk, g, Ng;
-    if (!PyArg_ParseTuple(args, "ddddddd", &I, &D, &dw, &k, &lk, &g, &Ng))
+    bool isOrthocyclic;
+    if (!PyArg_ParseTuple(args, "dddddddp", &I, &D, &dw, &k, &lk, &g, &Ng, &isOrthocyclic))
         return NULL;
 
     _CoilResult result;
-    getMultiLayerN(I, D, dw, k, lk, g, Ng, &result);
+    getMultiLayerN(I, D, dw, k, lk, g, Ng, &result, isOrthocyclic);
 
     // Erstelle das Python-Dict
     PyObject *py_result = PyDict_New();

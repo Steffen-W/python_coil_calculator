@@ -22,6 +22,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses
 #include "bessel.h"
 #include <math.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846 /* pi */
+#endif
+
 double findSRF(double lk, double Dk, double lw);
 double find_Cs(double p, double Dk, double lk);
 
